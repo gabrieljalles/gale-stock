@@ -1,0 +1,104 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Product {
+  id String @id @default(uuid())
+  name String
+  description String
+  category Category
+  tags String[]
+  sizeType SizeType
+  size String
+  imgUrl String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockEntries StockEntry[]
+  LostEntry LostEntry[]
+  catalog Catalog?
+}
+
+model StockEntry{
+  id String @id @default(cuid())
+  productId String
+  quantity Int
+  validityDate DateTime 
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product Product @relation(fields: [productId], references:[id])
+}
+
+model Catalog{
+  id String @id
+  
+  finalConsumerPrice Float
+  finalIfoodConsumerPrice Float
+  salePrice Float
+  quantityDiscount Int
+  discountPrice Float
+  
+  stock Int
+  available Boolean @default(true)
+
+  createdAt DateTime @default(now()) 
+  updatedAt DateTime @updatedAt
+  product Product @relation(fields:[id], references: [id])
+}
+
+model LostEntry{
+  id String @id @default(cuid())
+  productId String
+  quantity Int
+  reasonLoss ReasonLoss
+  note String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+enum SizeType {
+  g
+  l
+  ml
+  mg
+  kg
+  un
+}
+
+enum ReasonLoss {
+  Furto
+  ProdutoDanificado
+  DevolucaoCliente
+  Validade
+  Operacional
+  Perda
+}
+
+enum Category {
+  Cervejas
+  Tabacaria
+  NaoAlcoolicos
+  Destilados
+  Fermentados
+  Guloseimas
+  FriosCongelados
+  FarmaciaHigienePessoal
+  Mercearia
+  Vinhos
+  Salgadinhos
+  Outros
+}
+
+
+
