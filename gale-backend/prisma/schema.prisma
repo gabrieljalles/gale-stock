@@ -10,7 +10,7 @@ datasource db {
 model Product {
   id           String              @id @default(cuid())
   name         String @unique
-  description  String
+  description  String?
   category     Category
   tags         String[]
   sizeType     SizeType
@@ -30,6 +30,7 @@ model Supplier {
   enterprise          String
   cellphone           String
   appName             String?
+  city                String
   stockTransactions   StockTransaction[]
 }
 
@@ -37,13 +38,16 @@ model StockTransaction {
   id                String                        @id @default(cuid())
   supplierId        String
   transactionType   TransactionType
-  NumberPayments    Int
+  numberPayments    Int
   firstPaymentDate  DateTime?
-  totalCost         Float
+  totalProductCost  Decimal @db.Decimal(10,2)
+  freightCost Decimal @db.Decimal(10,2)
+  feeCost Decimal     @db.Decimal(10,2)
+  totalCost         Decimal @db.Decimal(10,2)
   statusCheckout    String
   createdAt         DateTime                      @default(now())
   updatedAt         DateTime                      @updatedAt
-  StockEntryDetails StockEntryDetails[]
+  stockEntryDetails StockEntryDetails[]
   supplier          Supplier                      @relation(fields: [supplierId], references: [id])
   installments      StockTransactionInstallment[]
 }
@@ -54,20 +58,22 @@ model StockTransactionInstallment {
   installmentNumber  Int
   dueDate            DateTime
   paidDate           DateTime?
-  amount             Float
-  transaction        StockTransaction @relation(fields: [stockTransactionId], references: [id])
+  fragmentCost      Decimal @db.Decimal(10,2)
+  transaction        StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
 }
 
 model StockEntryDetails {
   id               String           @id @default(cuid())
   productId        String
+  productCost Decimal @db.Decimal(10,2)
   quantity         Int
+  totalProductCost Decimal @db.Decimal(10,2)
   validityDate     DateTime
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   transactionId    String
   product          Product          @relation(fields: [productId], references: [id])
-  StockTransaction StockTransaction @relation(fields: [transactionId], references: [id])
+  stockTransaction StockTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 }
 
 model LostEntry {
@@ -83,16 +89,67 @@ model LostEntry {
 
 model Catalog {
   id                      String   @id
-  finalConsumerPrice      Float
-  finalIfoodConsumerPrice Float
-  discountPrice           Float
+  finalConsumerPrice      Decimal @db.Decimal(10,2)
+  finalIfoodConsumerPrice Decimal @db.Decimal(10,2)
+  isLiquidation           Boolean @default(false)
+  discountPrice           Decimal @db.Decimal(10,2)
   quantityDiscount        Int
-  discountQtdPrice        Float
+  discountQtdPrice        Decimal @db.Decimal(10,2)
   stock                   Int
   available               Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   product                 Product  @relation(fields: [id], references: [id])
+}
+
+model DiscountCatalog { 
+  id String @id @default(cuid())
+  productId String
+  InitialDate DateTime 
+  FinalDate DateTime
+}
+
+model User{
+  id String @id @default(cuid())
+  fullName String
+  cellPhone String
+  email String @unique
+  cpfCNPJ String
+  accountType AccountType
+  password String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserAddress{
+  id String @id @default(cuid())
+  userId String
+  typeAddress TypeAddress
+  address String
+  number String
+  complement String
+  district String
+  zipCode String
+  lat String?
+  lon String?
+}
+
+enum TypeAddress {
+  Street
+  Avanue
+  Alley
+  Lane
+  Highway
+  Road
+  Square
+  Village
+  Condominium
+}
+
+enum AccountType {
+  Owner
+  DeliveryMan
+  Client
 }
 
 enum SizeType {
@@ -105,12 +162,12 @@ enum SizeType {
 }
 
 enum ReasonLoss {
-  Furto
-  ProdutoDanificado
-  DevolucaoCliente
-  Validade
+  Theft
+  DamegedProduct
+  CustomerReturn
+  Expiration
   Operacional
-  Perda
+  Loss
 }
 
 enum Category {
