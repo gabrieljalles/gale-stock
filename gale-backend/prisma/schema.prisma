@@ -89,24 +89,68 @@ model LostEntry {
 
 model Catalog {
   id                      String   @id
-  finalConsumerPrice      Decimal @db.Decimal(10,2)
-  finalIfoodConsumerPrice Decimal @db.Decimal(10,2)
+  finalConsumerPrice      Decimal? @db.Decimal(10,2)
+  finalIfoodConsumerPrice Decimal? @db.Decimal(10,2)
   isLiquidation           Boolean @default(false)
-  discountPrice           Decimal @db.Decimal(10,2)
-  quantityDiscount        Int
-  discountQtdPrice        Decimal @db.Decimal(10,2)
-  stock                   Int
-  available               Boolean  @default(true)
+  discountPrice           Decimal? @db.Decimal(10,2)
+  quantityDiscount        Int?
+  discountQtdPrice        Decimal? @db.Decimal(10,2)
+  stock                   Int @default(0)
+  available               Boolean  @default(false)
+
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
+  
   product                 Product  @relation(fields: [id], references: [id])
+  discountCatalog DiscountCatalog[]
+  orderDetails OrderDetails[]
 }
 
 model DiscountCatalog { 
   id String @id @default(cuid())
   productId String
-  InitialDate DateTime 
-  FinalDate DateTime
+  initialDate DateTime 
+  finalDate DateTime
+  catalog Catalog @relation(fields:[productId], references: [id])
+}
+
+model OrderRequest{ 
+  id String @id @default(cuid())
+  orderType OrderType
+  orderSource OrderSource
+  clientId String?
+  deliveryManId String?
+  addressId String?
+  orderStatus OrderStatus @default(Confirmed)
+  createdAT DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  client User? @relation("ClientOrders", fields: [clientId], references: [id])
+  deliveryMan User? @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
+  address UserAddress? @relation(fields:[addressId], references: [id])
+  orderDetails OrderDetails[]
+}
+
+model OrderDetails{
+  id String @id @default(cuid())
+  orderRequestId String
+  productId String
+  quantity Int
+  unityPrice Decimal @db.Decimal(10,2)
+  totalPrice Decimal @db.Decimal(10,2)
+
+  catalog Catalog @relation(fields:[productId], references: [id])
+  orderRequest OrderRequest @relation(fields:[orderRequestId], references: [id])
+}
+
+model OrderTransaction{
+  id String @id @default(cuid())
+  transactionType TransactionType
+  totalPrice Decimal @db.Decimal(10,2)
+  statusCheckout String
+  paidDate DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User{
@@ -119,6 +163,10 @@ model User{
   password String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  clientOrders OrderRequest[] @relation("ClientOrders")
+  deliveryOrders OrderRequest[] @relation("DeliveryOrders")
+  address UserAddress[] 
 }
 
 model UserAddress{
@@ -132,6 +180,8 @@ model UserAddress{
   zipCode String
   lat String?
   lon String?
+  User  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderRequest OrderRequest[] 
 }
 
 enum TypeAddress {
@@ -146,8 +196,34 @@ enum TypeAddress {
   Condominium
 }
 
+enum OrderType {
+  Freight
+  InPerson
+}
+
+enum OrderStatus {
+  Draft
+  Placed
+  Confirmed
+  Preparing
+  ReadyToPickup
+  Dispatched
+  Concluded
+  Cancelled
+}
+
+enum OrderSource {
+  App
+  WhatsApp
+  Instagram
+  Cellphone
+  InPerson
+  Ifood 
+}
+
 enum AccountType {
-  Owner
+  Admin
+  Shopper
   DeliveryMan
   Client
 }
@@ -190,4 +266,5 @@ enum TransactionType {
   Money
   Pix
   DebitCard
+
 }

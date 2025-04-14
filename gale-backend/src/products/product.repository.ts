@@ -6,8 +6,9 @@ import { Product, Prisma } from '@prisma/client';
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: Prisma.ProductCreateInput): Promise<Product> {
-    return this.prisma.product.create({ data });
+  async create(data: Prisma.ProductCreateInput, tx?: Prisma.TransactionClient): Promise<Product> {
+    const client = tx ?? this.prisma;
+    return client.product.create({ data });
   }
 
   async findAll(): Promise<Product[]> {
@@ -20,5 +21,9 @@ export class ProductRepository {
 
   async delete(id: string): Promise<Product> {
     return this.prisma.product.delete({ where: { id } });
+  }
+
+  async runInTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(callback);
   }
 }

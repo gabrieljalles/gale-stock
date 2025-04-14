@@ -31,7 +31,7 @@ export class StockTransactionService{
                     },
                     tx,
                 );
-                console.log('✅ Created transaction:', transaction.id);
+                console.log('✅ Created transaction:');
             }catch(err){
                 console.error('❌ Erro ao criar transação:', err);
                 throw err;

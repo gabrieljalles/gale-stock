@@ -1,9 +1,14 @@
-import { Category, PrismaClient, SizeType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { NestFactory } from '@nestjs/core';
+import { Category, SizeType } from '@prisma/client';
+import { AppModule } from '../src/app.module';
+import { CreateProductDto } from '../src/products/dto/create-product.dto';
+import { ProductService } from '../src/products/product.service';
 
 async function seedProduct() {
-  const products = [
+  const app = await NestFactory.createApplicationContext(AppModule);
+  const productService = app.get(ProductService);
+
+  const products: CreateProductDto[] = [
     {
       name: 'Água com gás 500ml',
       description:
@@ -527,12 +532,11 @@ async function seedProduct() {
   ];
 
   for (const product of products) {
-    await prisma.product.create({
-      data: product,
-    });
+    await productService.create(product);
+    console.log(`✅ Produto criado: ${product.name}`);
   }
-
-  console.log('Seed concluído com sucesso!');
+  await app.close();
+  console.log('Seed de produtos concluído com sucesso!');
 }
 
 seedProduct()
@@ -540,6 +544,3 @@ seedProduct()
     console.error(e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
