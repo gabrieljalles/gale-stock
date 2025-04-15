@@ -4,7 +4,7 @@ import { Supplier, Prisma } from '@prisma/client';
 
 @Injectable()
 export class StockTransactionRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async runInTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(callback);
@@ -14,7 +14,7 @@ export class StockTransactionRepository {
     const client = tx ?? this.prisma;
     return client.stockTransaction.findUnique({where: {id}});
   }
-
+  
   async findUniqueInstallment(id: string, tx?: Prisma.TransactionClient){
     const client = tx ?? this.prisma;
     return client.stockTransactionInstallment.findUnique({where: {id}});
@@ -26,6 +26,16 @@ export class StockTransactionRepository {
     const client = tx ?? this.prisma;
 
     return client.stockTransactionInstallment.findMany({
+      where: {stockTransactionId: transactionId},
+    })
+  }
+
+  async findAllEntryDetailsByTransaction(transactionId: string,
+    tx?: Prisma.TransactionClient,
+  ){
+    const client = tx?? this.prisma;
+
+    return client.stockEntryDetails.findMany({
       where: {stockTransactionId: transactionId},
     })
   }
@@ -45,7 +55,7 @@ export class StockTransactionRepository {
     )
   }
 
-  async createStockEntryDetails(details: Array<{ transactionId: string, productId: string, productCost: number, totalProductCost: number, quantity: number, validityDate: Date }>, tx: Prisma.TransactionClient) {
+  async createStockEntryDetails(details: Array<{stockTransactionId: string, productId: string, productCost: number, totalProductCost: number, quantity: number, validityDate: Date }>, tx: Prisma.TransactionClient) {
     return Promise.all(
       details.map(detail =>
         tx.stockEntryDetails.create({

@@ -3,10 +3,14 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CreateStockTransactionDto } from "./dto/create-transaction.dto";
 import { StockTransactionRepository } from "./stock-transaction.repository";
 import { UpdateInstallmentDto } from "./dto/update-transaction.dto";
+import { CatalogService } from "src/catalog/catalog.service";
 
 @Injectable()
 export class StockTransactionService{
-    constructor(private repository: StockTransactionRepository){}
+    constructor(
+        private readonly repository: StockTransactionRepository,
+        private readonly catalogService: CatalogService
+    ){}
 
     async create(dto:CreateStockTransactionDto){
         const { installments, stockEntryDetails, supplierId, ...rest } = dto;
@@ -31,7 +35,7 @@ export class StockTransactionService{
                     },
                     tx,
                 );
-                console.log('✅ Created transaction:');
+                console.log('✅ Created transaction.');
             }catch(err){
                 console.error('❌ Erro ao criar transação:', err);
                 throw err;
@@ -72,7 +76,7 @@ export class StockTransactionService{
                 if(stockEntryDetails?.length){
                     await this.repository.createStockEntryDetails(
                         stockEntryDetails.map((p) => ({
-                            transactionId: transaction.id,
+                            stockTransactionId: transaction.id,
                             productId: p.productId,
                             quantity: p.quantity,
                             validityDate: new Date(p.validityDate),
@@ -81,8 +85,17 @@ export class StockTransactionService{
                         })),
                         tx
                     );
+
+                    for(const p of stockEntryDetails){
+                        await this.catalogService.adjustStock(
+                            p.productId,
+                            {stock: p.quantity},
+                            "increment",
+                            tx
+                        )
+                    }
                 }
-                console.log('✅ Products inserted');
+                console.log('✅ Products inserted and catalog stock updated');
             }catch(err){
                 console.error('Error to insert products stocks', err);
                 throw err;
@@ -93,10 +106,21 @@ export class StockTransactionService{
 
     async delete(id: string){
         return this.repository.runInTransaction(async (tx) => {
-            const transactionFound = await this.repository.findUniqueTransaction(id, tx);
+            const transaction = await this.repository.findUniqueTransaction(id, tx);
 
-            if(!transactionFound){
+            if(!transaction){
                 throw new NotFoundException('Transação não encontrada');
+            }
+
+            const entryDetails = await this.repository.findAllEntryDetailsByTransaction(id);
+
+            for (const detail of entryDetails){
+                await this.catalogService.adjustStock(
+                    detail.productId,
+                    {stock: detail.quantity},
+                    'decrement',
+                    tx
+                );
             }
 
             return this.repository.deleteTransaction(id, tx);

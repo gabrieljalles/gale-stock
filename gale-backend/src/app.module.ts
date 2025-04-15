@@ -6,9 +6,10 @@ import { ProductModule } from './products/product.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { StockTransactionModule } from './stock/stock-transaction/stock-transaction.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { LostEntryModule } from './lostEntry/lost-entry.module';
 
 @Module({
-  imports: [PrismaModule, ProductModule,SupplierModule,StockTransactionModule, CatalogModule],
+  imports: [PrismaModule, ProductModule,SupplierModule,StockTransactionModule, CatalogModule, LostEntryModule],
   controllers: [AppController],
   providers: [AppService],
 })

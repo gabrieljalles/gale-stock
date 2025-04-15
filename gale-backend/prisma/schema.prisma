@@ -64,6 +64,7 @@ model StockTransactionInstallment {
 
 model StockEntryDetails {
   id               String           @id @default(cuid())
+  stockTransactionId    String
   productId        String
   productCost Decimal @db.Decimal(10,2)
   quantity         Int
@@ -71,9 +72,9 @@ model StockEntryDetails {
   validityDate     DateTime
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  transactionId    String
+  
   product          Product          @relation(fields: [productId], references: [id])
-  stockTransaction StockTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  stockTransaction StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
 }
 
 model LostEntry {
@@ -101,7 +102,7 @@ model Catalog {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   
-  product                 Product  @relation(fields: [id], references: [id])
+  product                 Product  @relation(fields: [id], references: [id], onDelete: Cascade)
   discountCatalog DiscountCatalog[]
   orderDetails OrderDetails[]
 }
@@ -266,5 +267,5 @@ enum TransactionType {
   Money
   Pix
   DebitCard
-
+  OnTheBill
 }
