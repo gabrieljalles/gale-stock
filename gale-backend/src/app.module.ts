@@ -7,9 +7,12 @@ import { SupplierModule } from './supplier/supplier.module';
 import { StockTransactionModule } from './stock/stock-transaction/stock-transaction.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { LostEntryModule } from './lostEntry/lost-entry.module';
+// import { OrderModule } from './order/order.module';
+import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [PrismaModule, ProductModule,SupplierModule,StockTransactionModule, CatalogModule, LostEntryModule],
+  imports: [PrismaModule, ProductModule,SupplierModule,StockTransactionModule, CatalogModule, LostEntryModule, AuthModule, UserModule],//OrderModule
   controllers: [AppController],
   providers: [AppService],
 })

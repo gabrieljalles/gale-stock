@@ -3,6 +3,8 @@ Objetivos:
 [ ] - Criar uma função que verifica uma vez por dia se o produto está em promoção ou não. Todos os dias, 07h.
 [ ] - Criar carrinho em andamento. Para o cliente não precisar fazer o pedido novamente se algo aconteceu.
 [ ] - Criar uma tabela de rotina de trabalho, que hora que o app funciona e que hora ele não funciona e a partir de qual hora as bebidas ficam mais caras.
+[ ] - Quando o usuário cria uma conta, ele não pode criar contas diferentes de cliente. Os outros modelos são criados por meio de db.
+[ ] -
 
 
 

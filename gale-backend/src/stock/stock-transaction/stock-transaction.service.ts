@@ -37,7 +37,7 @@ export class StockTransactionService{
                 );
                 console.log('✅ Created transaction.');
             }catch(err){
-                console.error('❌ Erro ao criar transação:', err);
+                console.error('❌ Error creating transaction:', err);
                 throw err;
             }
 

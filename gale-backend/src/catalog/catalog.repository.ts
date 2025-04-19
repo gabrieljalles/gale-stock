@@ -7,15 +7,15 @@ import { UpdateCatalogDto } from "./dto/update-catalog.dto";
 export class CatalogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async runInTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(callback);
+  }
+
   async findById(id: string, tx ?: Prisma.TransactionClient){
     const client = tx?? this.prisma;
     return client.catalog.findUnique({
       where: {id: id}
     })
-  }
-
-  async runInTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(callback);
   }
 
   async create(id: string, tx?:Prisma.TransactionClient){

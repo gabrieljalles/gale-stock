@@ -117,19 +117,19 @@ model DiscountCatalog {
 
 model OrderRequest{ 
   id String @id @default(cuid())
-  orderType OrderType
+  deliveryType DeliveryType @default(InStore)
   orderSource OrderSource
   clientId String?
   deliveryManId String?
-  addressId String?
   orderStatus OrderStatus @default(Confirmed)
   createdAT DateTime @default(now())
   updateAt DateTime @updatedAt
 
   client User? @relation("ClientOrders", fields: [clientId], references: [id])
   deliveryMan User? @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
-  address UserAddress? @relation(fields:[addressId], references: [id])
+  orderAddress OrderAddress[]
   orderDetails OrderDetails[]
+  orderTransaction OrderTransaction[]
 }
 
 model OrderDetails{
@@ -141,17 +141,33 @@ model OrderDetails{
   totalPrice Decimal @db.Decimal(10,2)
 
   catalog Catalog @relation(fields:[productId], references: [id])
-  orderRequest OrderRequest @relation(fields:[orderRequestId], references: [id])
+  orderRequest OrderRequest @relation(fields:[orderRequestId], references: [id], onDelete: Cascade)
 }
 
 model OrderTransaction{
   id String @id @default(cuid())
-  transactionType TransactionType
+  orderRequestId String
+  transactionType TransactionType?
   totalPrice Decimal @db.Decimal(10,2)
   statusCheckout String
   paidDate DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  orderRequest OrderRequest @relation(fields:[orderRequestId], references: [id], onDelete: Cascade)
+}
+
+model OrderAddress{
+  id String @id @default(cuid())
+  orderRequestId String
+  typeAddress TypeAddress
+  address String
+  number String
+  district String
+  complement String?
+  zipCode String?
+
+  order OrderRequest @relation(fields: [orderRequestId], references: [id], onDelete: Cascade)
 }
 
 model User{
@@ -160,14 +176,15 @@ model User{
   cellPhone String
   email String @unique
   cpfCNPJ String
-  accountType AccountType
+  accountType AccountType? @default(Client)
   password String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  avatarUrl String?
   
   clientOrders OrderRequest[] @relation("ClientOrders")
   deliveryOrders OrderRequest[] @relation("DeliveryOrders")
-  address UserAddress[] 
+  address UserAddress[]
 }
 
 model UserAddress{
@@ -176,13 +193,10 @@ model UserAddress{
   typeAddress TypeAddress
   address String
   number String
-  complement String
+  complement String?
   district String
-  zipCode String
-  lat String?
-  lon String?
+  zipCode String?
   User  User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderRequest OrderRequest[] 
 }
 
 enum TypeAddress {
@@ -197,28 +211,32 @@ enum TypeAddress {
   Condominium
 }
 
-enum OrderType {
-  Freight
-  InPerson
+enum DeliveryType {
+  PickupAtStore // Cliente irá retirar no local
+  InStore // Cliente fez o pedido no balcão 
+  Delivery // Cliente pede para ter delivery
 }
 
 enum OrderStatus {
-  Draft
-  Placed
-  Confirmed
-  Preparing
-  ReadyToPickup
-  Dispatched
-  Concluded
-  Cancelled
+  Draft // Pedido em construção
+  Placed // Seu pedido foi enviado
+  Confirmed // Loja sabe que o pedido existe e confirma ele
+  PickedUp // Pedido retirado mas não teve método de pagamento selecionado.
+  Preparing // Preparando pedido
+  ReadyToPickup // Pronto para pegar
+  OutForDelivery //Em rota de entrega
+  Delivered // Entregue
+  DeliverFailed // Entrega falhou
+  Concluded // Concluído
+  Cancelled // Cancelado
 }
 
 enum OrderSource {
   App
   WhatsApp
   Instagram
-  Cellphone
-  InPerson
+  Call
+  Local
   Ifood 
 }
 
@@ -268,4 +286,5 @@ enum TransactionType {
   Pix
   DebitCard
   OnTheBill
+
 }
