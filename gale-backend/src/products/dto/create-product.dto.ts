@@ -1,4 +1,5 @@
 import { Category, SizeType } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import {
   IsString,
   IsOptional,
@@ -28,6 +29,9 @@ export class CreateProductDto {
 
   @IsInt()
   pack: number;
+
+  @IsOptional()
+  consumerPrice: Decimal;
 
   @IsString()
   size: string;

@@ -18,10 +18,18 @@ export class CatalogRepository {
     })
   }
 
-  async create(id: string, tx?:Prisma.TransactionClient){
+  async findManyById(productIds: string[], tx ?: Prisma.TransactionClient){
+    const client = tx?? this.prisma;
+    return client.catalog.findMany({
+      where: {id: {in: productIds}}
+    })
+  }
+
+  async create(id: string, consumerPrice?: Prisma.Decimal, tx?:Prisma.TransactionClient){
       const client = tx?? this.prisma;
       return client.catalog.create({ data:{
           id,
+          consumerPrice
       } });
     }
 

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProductRepository } from './product.repository';
-import { Product } from '@prisma/client';
+import { Prisma, Product } from '@prisma/client';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CatalogService } from 'src/catalog/catalog.service';
@@ -16,10 +16,11 @@ export class ProductService {
     private readonly catalogService: CatalogService
   ) {}
 
-  async create(data: CreateProductDto): Promise<Product> {
+  async create(data: CreateProductDto & { consumerPrice: Prisma.Decimal }): Promise<Product> {
     return this.repository.runInTransaction(async (tx) => {
-      const product = await this.repository.create(data,tx);
-      await this.catalogService.createCatalogForProduct(product.id, tx);
+      const {consumerPrice, ...productData} = data;
+      const product = await this.repository.create(productData,tx);
+      await this.catalogService.createCatalogForProduct(product.id, consumerPrice, tx);
       return product
     })
   }

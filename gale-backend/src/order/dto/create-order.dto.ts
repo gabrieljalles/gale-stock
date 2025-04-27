@@ -1,14 +1,15 @@
-import { DeliveryType, OrderSource, OrderStatus, TransactionType } from '@prisma/client';
+import { DeliveryType, OrderSource, OrderStatus, TransactionType, TypeAddress } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsString, IsOptional, MinLength, MaxLength, IsNumber, IsDateString, IsArray, ValidateNested, IsEnum, IsInt } from 'class-validator';
 
-export class CreateOrderRequestDto {
+export class CreateOrderDto {
     @IsEnum(DeliveryType)
     deliveryType: DeliveryType;
-  
+
+    @IsOptional()
     @IsEnum(OrderSource)
     orderSource: OrderSource;
-  
+
     @IsOptional()
     @IsString()
     clientId?: string;
@@ -19,7 +20,7 @@ export class CreateOrderRequestDto {
   
     @IsOptional()
     @IsString()
-    addressId?: string;
+    userAddressId?: string;  //Não tem na tabela
   
     @IsOptional()
     @IsEnum(OrderStatus)
@@ -27,44 +28,54 @@ export class CreateOrderRequestDto {
   }
 
   export class CreateOrderDetailsDto {
-    @IsString()
-    orderRequestId: string;
   
     @IsString()
     productId: string;
   
     @IsInt()
     quantity: number;
-  
-    @IsNumber()
-    unityPrice: number;
-  
-    @IsNumber()
-    totalPrice: number;
+
 }
 
 export class CreateOrderTransactionDto {
-    @IsString()
-    orderRequestId: string;
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  transactionType: TransactionType;
+
+}
+
+export class CreateOrderAddressDto {
   
-    @IsEnum(TransactionType)
-    transactionType: TransactionType;
-  
-    @IsNumber()
-    totalPrice: number;
-  
-    @IsString()
-    statusCheckout: string;
-  
-    @IsOptional()
-    @IsDateString()
-    paidDate?: string;
+  @IsOptional()
+  @IsEnum(TypeAddress)
+  typeAddress?: TypeAddress;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  number?: string;
+
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  complement?: string;
+
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
 }
 
 export class CreateFullOrderDto{
   @ValidateNested()
-  @Type(() => CreateOrderRequestDto)
-  orderRequest: CreateOrderRequestDto
+  @Type(() => CreateOrderDto)
+  order: CreateOrderDto
 
   @IsArray()
   @ValidateNested({each: true})
@@ -74,6 +85,10 @@ export class CreateFullOrderDto{
   @ValidateNested()
   @Type(() => CreateOrderTransactionDto)
   orderTransaction: CreateOrderTransactionDto;
+
+  @ValidateNested()
+  @Type(() => CreateOrderAddressDto)
+  orderAddress: CreateOrderAddressDto;
 }
 
    

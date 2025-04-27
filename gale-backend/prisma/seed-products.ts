@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Category, SizeType } from '@prisma/client';
+import { Category, Prisma, SizeType } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { CreateProductDto } from '../src/products/dto/create-product.dto';
 import { ProductService } from '../src/products/product.service';
@@ -20,7 +20,7 @@ async function seedProduct() {
       size: '500',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfJukRATC9gSYHrpMkaq1X3Oc40dBDy8TWQJRK',
-      finalConsumerPrice: 3
+      consumerPrice: 3
       },
     {
       name: 'água tônica 350ml',
@@ -33,7 +33,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfNJN9HWllrpIT8LMF0B5vyKmh2RV7YzCEesDN',
-      finalConsumerPrice: 3
+      consumerPrice: 3
       },
     {
       name: 'água tônica 350ml 0 açúcar',
@@ -46,7 +46,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfyVBCsFiPY5X6TtKkmdZxQAcfrlJvOH2zsEaV',
-      finalConsumerPrice: 3
+      consumerPrice: 3
       },
     {
       name: 'Amstel 350ml',
@@ -59,7 +59,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfCkYImadOnRv8qt3ENQ0WUfdFx6VbmirlZgeu',
-      finalConsumerPrice:3.75
+      consumerPrice:3.75
       },
     {
       name: 'Amstel ultra 269ml',
@@ -72,7 +72,7 @@ async function seedProduct() {
       size: '269',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf1v83ZzUhzOoRgfSwjAKCULZqV4urHd9F1EYn',
-      finalConsumerPrice: 4.65
+      consumerPrice: 4.65
       },
     {
       name: 'Antartica boa 300ml',
@@ -85,7 +85,7 @@ async function seedProduct() {
       size: '300',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfYRGmwjDNbPXjK6cB4rtl1d9Esv2L7hGnIiM3',
-      finalConsumerPrice: 2.60
+      consumerPrice: 2.60
       },
     {
       name: 'Antartica lata 350ml',
@@ -98,7 +98,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfgBJMgLOuFMmzCRrBYfdINw2J8e54o61DLHbX',
-      finalConsumerPrice: 3.5
+      consumerPrice: 3.5
       },
     {
       name: 'Beats GT 269ml',
@@ -111,7 +111,7 @@ async function seedProduct() {
       size: '269',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfjbGa0sHFoWBiM1TtXcqQUmIDN9ZeAjHgz4wR',
-      finalConsumerPrice: 7
+      consumerPrice: 7
       },
     {
       name: 'Beats Redmix 269ml',
@@ -124,7 +124,7 @@ async function seedProduct() {
       size: '269',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfwFYNksh7SaLsdRCAD0k3VTHe1XIPc6UjiEB9',
-      finalConsumerPrice: 7
+      consumerPrice: 7
       },
     {
       name: 'Beats senses 269ml',
@@ -136,7 +136,7 @@ async function seedProduct() {
       size: '269',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfTQfiBdocMamPA9vHby86UN7it4JBeYZx0Fhp',
-      finalConsumerPrice: 7
+      consumerPrice: 7
       },
     {
       name: 'Beats tropical 269ml',
@@ -149,7 +149,7 @@ async function seedProduct() {
       size: '269',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfSgBQO95OgLMIBSNZ1v7qfm62GeVu8oRKTcF0',
-      finalConsumerPrice: 7
+      consumerPrice: 7
       },
     {
       name: 'Brahma 300ml',
@@ -162,7 +162,7 @@ async function seedProduct() {
       size: '300',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfDH3HuQWGORFvfJrNWxbBokZ5SQTCtmyHswz6',
-      finalConsumerPrice: 2.6
+      consumerPrice: 2.6
       },
     {
       name: 'Brahma 350ml',
@@ -175,7 +175,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfqONfd8VcnbxQwC4hILAXmZ6iSy1Wu9evDEHF',
-      finalConsumerPrice: 3.55
+      consumerPrice: 3.55
       },
     {
       name: 'Brahma 600ml',
@@ -188,7 +188,7 @@ async function seedProduct() {
       size: '600',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfRvy8EfZ9iCDn9KkUElTFRMwWLAPQahBN2Z0c',
-      finalConsumerPrice: 7.5
+      consumerPrice: 7.5
       },
     {
       name: 'Budweiser 473ml',
@@ -201,7 +201,7 @@ async function seedProduct() {
       size: '473',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf6bqASbjuY7pk0n8hcUdBwRW41Gvrq6eZQEjF',
-      finalConsumerPrice: 5
+      consumerPrice: 5
       },
     {
       name: 'Gelo 2,5kg',
@@ -213,7 +213,7 @@ async function seedProduct() {
       size: '2.5',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfXYJTBqKVclKkod89RqAWH2mybQtChgJeIvED',
-      finalConsumerPrice: 5.20
+      consumerPrice: 5.20
       },
     {
       name: 'Gelo 5kg',
@@ -225,7 +225,7 @@ async function seedProduct() {
       size: '5',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfXYJTBqKVclKkod89RqAWH2mybQtChgJeIvED',
-      finalConsumerPrice: 7.9
+      consumerPrice: 7.9
       },
     {
       name: 'Halls preto',
@@ -238,7 +238,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf7k0Jkb1MbRLaHWp3XVFPnUkisAlDJhr40mS8',
-      finalConsumerPrice: 3
+      consumerPrice: 3
       },
     {
       name: 'Heineken 350ml',
@@ -251,7 +251,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfYhWw8ZDNbPXjK6cB4rtl1d9Esv2L7hGnIiM3',
-      finalConsumerPrice: 5.8 
+      consumerPrice: 5.8 
       },
     {
       name: 'Heineken 600ml',
@@ -264,7 +264,7 @@ async function seedProduct() {
       size: '600',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf5xpkLhXMB0Xr3xNtufO8bmvLqKY7ohZdsipE',
-      finalConsumerPrice: 10
+      consumerPrice: 10
       },
     {
       name: 'Heineken shot 250ml',
@@ -277,7 +277,7 @@ async function seedProduct() {
       size: '250',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfWUKQ36m7V9aZuRjmeKvyx78pzXUkPlwtfNo5',
-      finalConsumerPrice: 5.5
+      consumerPrice: 5.5
       },
     {
       name: 'Ice 51 Limão 275ml',
@@ -290,7 +290,7 @@ async function seedProduct() {
       size: '275',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf73TQlCj1MbRLaHWp3XVFPnUkisAlDJhr40mS',
-      finalConsumerPrice: 8.2
+      consumerPrice: 8.2
       },
     {
       name: 'Isqueiro',
@@ -302,7 +302,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfUyaW4RH35GaYnRLZtxwlOzCmf2dryQ7EvkBu',
-      finalConsumerPrice: 3.5
+      consumerPrice: 3.5
       },
     {
       name: 'Guaraná Mineiro 1,5l',
@@ -314,7 +314,7 @@ async function seedProduct() {
       sizeType: SizeType.L,
       size: '1.5',
       imgUrl: 'https://utfs.io/f/',
-      finalConsumerPrice: 7.5
+      consumerPrice: 7.5
     }
     ,
     {
@@ -328,7 +328,7 @@ async function seedProduct() {
       size: '473',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfq8jQrbVcnbxQwC4hILAXmZ6iSy1Wu9evDEHF',
-      finalConsumerPrice: 10
+      consumerPrice: 10
       },
     {
       name: 'Monster tradicional ZERO 473ml',
@@ -341,7 +341,7 @@ async function seedProduct() {
       size: '473',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfjFBPkfHFoWBiM1TtXcqQUmIDN9ZeAjHgz4wR',
-      finalConsumerPrice: 10
+      consumerPrice: 10
       },
     {
       name: 'Monster Ultra 473ml',
@@ -354,7 +354,7 @@ async function seedProduct() {
       size: '473',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfiBI9NG0fLpX6sIzmF4udQHMYENw90PR7AOGl',
-      finalConsumerPrice: 10
+      consumerPrice: 10
       },
     {
       name: 'Original 300ml',
@@ -366,7 +366,7 @@ async function seedProduct() {
       size: '300',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfxxSPk8ZEzSiRfNUvuw5a6lxk01tDIqcPOAMm',
-      finalConsumerPrice: 3.2
+      consumerPrice: 3.2
       },
     {
       name: 'Original lata 473ml',
@@ -378,7 +378,7 @@ async function seedProduct() {
       size: '473',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf780Zfz1MbRLaHWp3XVFPnUkisAlDJhr40mS8',
-      finalConsumerPrice: 5.4
+      consumerPrice: 5.4
       },
     {
       name: 'Ouro branco',
@@ -390,7 +390,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfclMVBQ9LNTCgGaJj5crDhp49osqzQVOUZdEb',
-      finalConsumerPrice: 2
+      consumerPrice: 2
       },
     {
       name: 'Red Bull 250ml',
@@ -403,7 +403,7 @@ async function seedProduct() {
       size: '250',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfCs1ZnDdOnRv8qt3ENQ0WUfdFx6VbmirlZgeu',
-      finalConsumerPrice: 12
+      consumerPrice: 12
       },
     {
       name: 'Skol 300ml',
@@ -416,7 +416,7 @@ async function seedProduct() {
       size: '300',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfDH3HuQWGORFvfJrNWxbBokZ5SQTCtmyHswz6',
-      finalConsumerPrice: 2.6
+      consumerPrice: 2.6
       },
     {
       name: 'Skol 350ml',
@@ -429,7 +429,7 @@ async function seedProduct() {
       size: '350',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfAO8qqfrP8Jb1xlV57E2GkvuwMLtc6aeRFQj4',
-      finalConsumerPrice: 3.55
+      consumerPrice: 3.55
       },
     {
       name: 'Smirnoff ice 275ml',
@@ -442,7 +442,7 @@ async function seedProduct() {
       size: '275',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfqulHvDVcnbxQwC4hILAXmZ6iSy1Wu9evDEHF',
-      finalConsumerPrice: 9.2
+      consumerPrice: 9.2
       },
     {
       name: 'Sonho de valsa',
@@ -455,7 +455,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfbcTbUwSvaFZKHXL4P3xop0Y7mJ29Mn6TiUz5',
-      finalConsumerPrice: 2
+      consumerPrice: 2
       },
     {
       name: 'Suco Del Valle Abacaxi 1L',
@@ -468,7 +468,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfwd3a9Qh7SaLsdRCAD0k3VTHe1XIPc6UjiEB9',
-      finalConsumerPrice: 8
+      consumerPrice: 8
       },
     {
       name: 'Suco Del Valle Caju 1L',
@@ -481,7 +481,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf0qleGGSPhoGWpmcBZR5OAqSXjyUuisItewdl',
-      finalConsumerPrice: 8
+      consumerPrice: 8
       },
     {
       name: 'Suco Del Valle Maracuja 1L',
@@ -494,7 +494,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfBCC6DmstgcZoIk2x4FEAyf7peJYNiHVMnvlK',
-      finalConsumerPrice: 8
+      consumerPrice: 8
       },
     {
       name: 'Suco Del Valle Pessego 1L',
@@ -507,7 +507,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfAclN2jP8Jb1xlV57E2GkvuwMLtc6aeRFQj4W',
-      finalConsumerPrice: 8
+      consumerPrice: 8
       },
     {
       name: 'Trident menta',
@@ -520,7 +520,7 @@ async function seedProduct() {
       size: '1',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfbok5nowSvaFZKHXL4P3xop0Y7mJ29Mn6TiUz',
-      finalConsumerPrice: 3
+      consumerPrice: 3
       },
     {
       name: 'Heineken long neck ZERO 330ml',
@@ -533,7 +533,7 @@ async function seedProduct() {
       size: '330',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfAtffS3P8Jb1xlV57E2GkvuwMLtc6aeRFQj4W',
-      finalConsumerPrice: 7.25
+      consumerPrice: 7.25
       },
     {
       name: 'Ice Cabaré Limão 275 ml',
@@ -546,7 +546,7 @@ async function seedProduct() {
       size: '275',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfd1eHuhbEujybQ21NSRmzkHaYXGxBfdOre5Ag',
-      finalConsumerPrice:  9.2
+      consumerPrice:  9.2
       },
     {
       name: 'Ice Cabaré Frutas vermelhas 275 ml',
@@ -559,7 +559,7 @@ async function seedProduct() {
       size: '275',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIfJ5MJojC9gSYHrpMkaq1X3Oc40dBDy8TWQJRK',
-      finalConsumerPrice: 9.2
+      consumerPrice: 9.2
       },
     {
       name: 'Ice Cabaré Frutas Amarelas 275 ml',
@@ -572,13 +572,19 @@ async function seedProduct() {
       size: '275',
       imgUrl:
         'https://utfs.io/f/oK9fzCAtRnIf7zllEV1MbRLaHWp3XVFPnUkisAlDJhr40mS8',
-      finalConsumerPrice: 9.2
+      consumerPrice: 9.2
       },
   ];
 
-  for (const product of products) {
-    await productService.create(product);
-    console.log(`✅ Produto criado: ${product.name}`);
+  for (const rawProduct of products) {
+
+    const productDto: CreateProductDto & { consumerPrice: Prisma.Decimal } = {
+      ...rawProduct,
+      consumerPrice: new Prisma.Decimal(rawProduct.consumerPrice),
+    };
+    await productService.create(productDto);
+  
+    console.log(`✅ Produto criado: ${rawProduct.name}`);
   }
   await app.close();
   console.log('Seed de produtos concluído com sucesso!');

@@ -90,12 +90,13 @@ model LostEntry {
 
 model Catalog {
   id                      String   @id
-  finalConsumerPrice      Decimal? @db.Decimal(10,2)
-  finalIfoodConsumerPrice Decimal? @db.Decimal(10,2)
-  isLiquidation           Boolean @default(false)
-  discountPrice           Decimal? @db.Decimal(10,2)
-  quantityDiscount        Int?
-  discountQtdPrice        Decimal? @db.Decimal(10,2)
+  consumerIfoodPrice      Decimal? @db.Decimal(10,2)
+  consumerNightPrice      Decimal? @db.Decimal(10,2)
+  consumerPrice           Decimal? @db.Decimal(10,2)
+  liquidationPrice        Decimal? @db.Decimal(10,2)
+  discountPackPrice       Decimal? @db.Decimal(10,2)
+  isLiquidation           Boolean  @default(false)
+  packageDiscountAmount   Int? 
   stock                   Int @default(0)
   available               Boolean  @default(false)
 
@@ -115,10 +116,10 @@ model DiscountCatalog {
   catalog Catalog @relation(fields:[productId], references: [id])
 }
 
-model OrderRequest{ 
+model Order { 
   id String @id @default(cuid())
   deliveryType DeliveryType @default(InStore)
-  orderSource OrderSource
+  orderSource OrderSource?
   clientId String?
   deliveryManId String?
   orderStatus OrderStatus @default(Confirmed)
@@ -127,39 +128,41 @@ model OrderRequest{
 
   client User? @relation("ClientOrders", fields: [clientId], references: [id])
   deliveryMan User? @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
-  orderAddress OrderAddress[]
+  orderAddress OrderAddress?
   orderDetails OrderDetails[]
   orderTransaction OrderTransaction[]
 }
 
 model OrderDetails{
   id String @id @default(cuid())
-  orderRequestId String
+  orderId String
   productId String
   quantity Int
   unityPrice Decimal @db.Decimal(10,2)
   totalPrice Decimal @db.Decimal(10,2)
 
   catalog Catalog @relation(fields:[productId], references: [id])
-  orderRequest OrderRequest @relation(fields:[orderRequestId], references: [id], onDelete: Cascade)
+  order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
 }
 
 model OrderTransaction{
   id String @id @default(cuid())
-  orderRequestId String
+  orderId String
   transactionType TransactionType?
+  totalProductPrice Decimal @db.Decimal(10,2)
+  freightPrice Decimal @db.Decimal(10,2)
   totalPrice Decimal @db.Decimal(10,2)
-  statusCheckout String
+  isPaid Boolean @default(false)
   paidDate DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orderRequest OrderRequest @relation(fields:[orderRequestId], references: [id], onDelete: Cascade)
+  order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
 }
 
 model OrderAddress{
   id String @id @default(cuid())
-  orderRequestId String
+  orderId String? @unique
   typeAddress TypeAddress
   address String
   number String
@@ -167,7 +170,7 @@ model OrderAddress{
   complement String?
   zipCode String?
 
-  order OrderRequest @relation(fields: [orderRequestId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model User{
@@ -181,9 +184,9 @@ model User{
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   avatarUrl String?
-  
-  clientOrders OrderRequest[] @relation("ClientOrders")
-  deliveryOrders OrderRequest[] @relation("DeliveryOrders")
+  canPayOnTheBill Boolean @default(false)
+  clientOrders Order[] @relation("ClientOrders")
+  deliveryOrders Order[] @relation("DeliveryOrders")
   address UserAddress[]
 }
 
@@ -196,7 +199,7 @@ model UserAddress{
   complement String?
   district String
   zipCode String?
-  User  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum TypeAddress {
@@ -212,23 +215,26 @@ enum TypeAddress {
 }
 
 enum DeliveryType {
-  PickupAtStore // Cliente irá retirar no local
   InStore // Cliente fez o pedido no balcão 
   Delivery // Cliente pede para ter delivery
+  //PickupAtStore Cliente irá retirar no local
 }
 
 enum OrderStatus {
-  Draft // Pedido em construção
-  Placed // Seu pedido foi enviado
-  Confirmed // Loja sabe que o pedido existe e confirma ele
-  PickedUp // Pedido retirado mas não teve método de pagamento selecionado.
-  Preparing // Preparando pedido
-  ReadyToPickup // Pronto para pegar
-  OutForDelivery //Em rota de entrega
-  Delivered // Entregue
-  DeliverFailed // Entrega falhou
-  Concluded // Concluído
-  Cancelled // Cancelado
+  PickedUp // Pegou mais não pagou (Aguardando pagamento)
+
+  Draft // (DELIVERY) -> Pedido sendo criado pelo cliente.
+  Placed //(DELIVERY) Pedido do cliente foi enviado
+  ReadyToPickup //(DELIVERY) Pedido montado, Pronto para pegar (cliente / Delivery man)
+  OutForDelivery // (DELIVERY) -> Em rota de entrega
+  Delivered // (DELIVERY) -> Entregue
+  DeliveryFailed // (DELIVERY) -> Entrega falhou
+  Cancelled // (DELIVERY) -> Pedido não entregue, desistência do cliente.
+
+  Confirmed // (TODOS) -> Loja confirmou o pedido.
+  Preparing // (TODOS) -> Pedido sendo preparado.
+  OnAccount // (TODOS) -> Pedido recebido, mas o pagamento será feito posteriormente em uma data fixa.
+  Concluded // (TODOS) -> Pedido entregue e valor recebido.
 }
 
 enum OrderSource {
@@ -286,5 +292,4 @@ enum TransactionType {
   Pix
   DebitCard
   OnTheBill
-
 }

@@ -11,10 +11,15 @@ export class CatalogService {
     return await this.repository.findById(productId, tx);
   }
 
-  async createCatalogForProduct(productId: string, tx?: Prisma.TransactionClient){
-    return await this.repository.create(productId, tx);
+  async findManyProductsByIds(productIds: string[], tx?: Prisma.TransactionClient){
+    return await this.repository.findManyById(productIds, tx);
   }
 
+  async createCatalogForProduct(productId: string, consumerPrice?: Prisma.Decimal, tx?: Prisma.TransactionClient){
+    return await this.repository.create(productId, consumerPrice, tx);
+  }
+
+  //Precisa criar um multiplicador para nightPrice
   async updateCatalog(id: string, data: UpdateCatalogDto){
     return await this.repository.update(id, data);
   }

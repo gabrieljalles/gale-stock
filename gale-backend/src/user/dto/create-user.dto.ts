@@ -25,6 +25,7 @@ export class CreateUserDto {
 }
 
 export class CreateUserAddressDto {
+
     @IsEnum(TypeAddress) 
     typeAddress: TypeAddress;
 

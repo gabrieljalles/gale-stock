@@ -1,16 +1,16 @@
 import { Body, Controller, Injectable, Param, ParseUUIDPipe, Patch, Post } from "@nestjs/common";
-import { CatalogService } from "./catalog.service";
-import { UpdateCatalogDto } from "./dto/update-catalog.dto";
-import { CreateOrderRequestDto } from "./dto/create-order.dto";
+import { CreateFullOrderDto,  } from "./dto/create-order.dto";
+import { OrderService } from "./order.service";
 
 
-@Controller('order-request')
+@Controller('order')
 export class OrderController{
 
-    @Post()
-      create(@Body() body: CreateOrderRequestDto) {
-        return this.OrderRequestService.create(body);
-      }
+  constructor(private readonly service: OrderService) {}
 
+    @Post('shopper')
+      createOrderByShopper(@Body() body: CreateFullOrderDto) {
+        return this.service.createOrderByShopper(body);
+      }
 
 }
