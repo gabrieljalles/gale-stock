@@ -31,6 +31,8 @@ model Supplier {
   cellphone           String
   appName             String?
   city                String
+  email               String? @unique
+  imgUrl              String?
   stockTransactions   StockTransaction[]
 }
 
