@@ -27,8 +27,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${roboto.variable}`}>
-        <div className="flex h-full flex-col">
-          <div className="flex-1 bg-background">{children}</div>
+        <div className="flex min-h-screen flex-1 items-start justify-center bg-background bg-slate-200">
+          {children}
         </div>
       </body>
     </html>

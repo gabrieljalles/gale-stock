@@ -1,6 +1,16 @@
 import { TransactionType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, MinLength, MaxLength, IsNumber, IsDateString, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  IsNumber,
+  IsDateString,
+  IsArray,
+  ValidateNested,
+  IsEnum,
+} from 'class-validator';
 
 export class CreateStockTransactionDto {
   @IsString()
@@ -28,49 +38,45 @@ export class CreateStockTransactionDto {
   @IsNumber()
   totalCost: number;
 
-  @IsString()
-  statusCheckout: string;
-
   @IsArray()
-  @ValidateNested({ each: true})
+  @ValidateNested({ each: true })
   @Type(() => CreateStockEntryDetailDto)
-  stockEntryDetails: CreateStockEntryDetailDto[];
+  stockEntryDetail: CreateStockEntryDetailDto[];
 
   @IsArray()
-  @ValidateNested({each: true})
+  @ValidateNested({ each: true })
   @Type(() => CreateStockTransactionInstallmentDto)
   installments: CreateStockTransactionInstallmentDto[];
 }
 
 export class CreateStockTransactionInstallmentDto {
-    @IsNumber()
-    installmentNumber: number;
+  @IsNumber()
+  installmentNumber: number;
 
-    @IsDateString()
-    dueDate: string;
+  @IsDateString()
+  dueDate: string;
 
-    @IsOptional()
-    @IsDateString()
-    paidDate?: string;
+  @IsOptional()
+  @IsDateString()
+  paidDate?: string;
 
-    @IsNumber()
-    fragmentCost: number;
+  @IsNumber()
+  fragmentCost: number;
 }
 
 export class CreateStockEntryDetailDto {
-    @IsString()
-    productId: string;
+  @IsString()
+  productId: string;
 
-    @IsNumber()
-    quantity: number;
+  @IsNumber()
+  initialQuantity: number;
 
-    @IsDateString()
-    validityDate: string;
+  @IsDateString()
+  validityDate: string;
 
-    @IsNumber()
-    productCost: number;
+  @IsNumber()
+  baseUnitCost: number;
 
-    @IsNumber()
-    totalProductCost: number;
+  @IsNumber()
+  totalProductCost: number;
 }
-

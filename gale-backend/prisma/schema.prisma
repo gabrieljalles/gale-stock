@@ -10,6 +10,7 @@ datasource db {
 model Product {
   id           String              @id @default(cuid())
   name         String @unique
+  barCode      String? @unique
   description  String?
   category     Category
   tags         String[]
@@ -21,7 +22,7 @@ model Product {
   updatedAt    DateTime            @updatedAt
   catalog      Catalog?
   LostEntry    LostEntry[]
-  stockEntries StockEntryDetails[]
+  stockEntries StockEntryDetail[]
 }
 
 model Supplier {
@@ -42,14 +43,14 @@ model StockTransaction {
   transactionType   TransactionType
   numberPayments    Int
   firstPaymentDate  DateTime?
-  totalProductCost  Decimal @db.Decimal(10,2)
-  freightCost Decimal @db.Decimal(10,2)
-  feeCost Decimal     @db.Decimal(10,2)
-  totalCost         Decimal @db.Decimal(10,2)
+  totalProductCost  Decimal @db.Decimal(10,4)
+  freightCost Decimal @db.Decimal(10,4)
+  feeCost Decimal     @db.Decimal(10,4)
+  totalCost         Decimal @db.Decimal(10,4)
   statusCheckout    String
   createdAt         DateTime                      @default(now())
   updatedAt         DateTime                      @updatedAt
-  stockEntryDetails StockEntryDetails[]
+  stockEntryDetails StockEntryDetail[]
   supplier          Supplier                      @relation(fields: [supplierId], references: [id])
   installments      StockTransactionInstallment[]
 }
@@ -60,23 +61,37 @@ model StockTransactionInstallment {
   installmentNumber  Int
   dueDate            DateTime
   paidDate           DateTime?
-  fragmentCost      Decimal @db.Decimal(10,2)
+  fragmentCost      Decimal @db.Decimal(10,4)
   transaction        StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
 }
 
-model StockEntryDetails {
+model StockEntryDetail {
   id               String           @id @default(cuid())
   stockTransactionId    String
   productId        String
-  productCost Decimal @db.Decimal(10,2)
-  quantity         Int
-  totalProductCost Decimal @db.Decimal(10,2)
+  baseUnitCost Decimal @db.Decimal(10,4)
+  landedUnitCost Decimal @db.Decimal(10,4)
+  initialQuantity         Int
+  quantityOnStock         Int
+  totalProductCost Decimal @db.Decimal(10,4)
   validityDate     DateTime
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   
   product          Product          @relation(fields: [productId], references: [id])
   stockTransaction StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
+  stockMovements   StockMovement[]
+}
+
+model StockMovement {
+  id String @id @default(cuid())
+  stockEntryDetailId String
+  orderDetailId String
+  quantityMoved Int
+  movedAt DateTime @default(now())
+
+  stockEntryDetail StockEntryDetail @relation(fields: [stockEntryDetailId], references: [id], onDelete: Cascade)
+  orderDetail OrderDetail @relation(fields: [orderDetailId], references: [id], onDelete: Cascade)
 }
 
 model LostEntry {
@@ -92,14 +107,13 @@ model LostEntry {
 
 model Catalog {
   id                      String   @id
-  consumerIfoodPrice      Decimal? @db.Decimal(10,2)
-  consumerNightPrice      Decimal? @db.Decimal(10,2)
-  consumerPrice           Decimal? @db.Decimal(10,2)
-  liquidationPrice        Decimal? @db.Decimal(10,2)
-  discountPackPrice       Decimal? @db.Decimal(10,2)
+  consumerIfoodPrice      Decimal? @db.Decimal(10,4)
+  consumerNightPrice      Decimal? @db.Decimal(10,4)
+  consumerPrice           Decimal? @db.Decimal(10,4)
+  liquidationPrice        Decimal? @db.Decimal(10,4)
+  discountPackPrice       Decimal? @db.Decimal(10,4)
   isLiquidation           Boolean  @default(false)
   packageDiscountAmount   Int? 
-  stock                   Int @default(0)
   available               Boolean  @default(false)
 
   createdAt               DateTime @default(now())
@@ -107,7 +121,7 @@ model Catalog {
   
   product                 Product  @relation(fields: [id], references: [id], onDelete: Cascade)
   discountCatalog DiscountCatalog[]
-  orderDetails OrderDetails[]
+  orderDetails OrderDetail[]
 }
 
 model DiscountCatalog { 
@@ -131,29 +145,30 @@ model Order {
   client User? @relation("ClientOrders", fields: [clientId], references: [id])
   deliveryMan User? @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
   orderAddress OrderAddress?
-  orderDetails OrderDetails[]
+  orderDetails OrderDetail[]
   orderTransaction OrderTransaction[]
 }
 
-model OrderDetails{
+model OrderDetail{
   id String @id @default(cuid())
   orderId String
   productId String
   quantity Int
-  unityPrice Decimal @db.Decimal(10,2)
-  totalPrice Decimal @db.Decimal(10,2)
+  unityPrice Decimal @db.Decimal(10,4)
+  totalPrice Decimal @db.Decimal(10,4)
 
   catalog Catalog @relation(fields:[productId], references: [id])
   order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
 }
 
 model OrderTransaction{
   id String @id @default(cuid())
   orderId String
   transactionType TransactionType?
-  totalProductPrice Decimal @db.Decimal(10,2)
-  freightPrice Decimal @db.Decimal(10,2)
-  totalPrice Decimal @db.Decimal(10,2)
+  totalProductPrice Decimal @db.Decimal(10,4)
+  freightPrice Decimal @db.Decimal(10,4)
+  totalPrice Decimal @db.Decimal(10,4)
   isPaid Boolean @default(false)
   paidDate DateTime?
   createdAt DateTime @default(now())
@@ -179,6 +194,8 @@ model User{
   id String @id @default(cuid())
   fullName String
   cellPhone String
+  dateOfBirth DateTime
+  gender GenderType
   email String @unique
   cpfCNPJ String
   accountType AccountType? @default(Client)
@@ -246,6 +263,13 @@ enum OrderSource {
   Call
   Local
   Ifood 
+}
+
+enum GenderType {
+  Masculine
+  Feminine
+  Other
+  DoNotInform
 }
 
 enum AccountType {

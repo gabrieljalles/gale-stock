@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+:root {
+  --font-sans: "Roboto", sans-serif;
+}
+
+:root {
+  --color-bg: #f8fdfc; /* Fundo para light */
+  --color-primary: #131e33; /* Primary para light */
+  --color-secondary: #f8bd1e; /* Secondary (igual para ambos) */
+}
+
+/* quando eu adicionar .dark no <html> (ou <body>), mudam para dark */
+.dark {
+  --color-bg: #131e33; /* Fundo para dark */
+  --color-primary: #f8fdfc; /* Primary para dark */
+  /* --color-secondary permanece #f8bd1e */
+}
+
+.p-styled {
+  @apply text-justify indent-8 text-sm;
+}

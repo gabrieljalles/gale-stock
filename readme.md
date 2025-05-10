@@ -1,16 +1,38 @@
 Perguntas para o cliente (LEO)
 [] - Perguntar para o Leo se o turno da noite pode ser um desconto inferior ao turno da manhã se o cliente atinge a quantidade Mínima de produtos para ter promoção.
 [] - Falar para o Leo sobre consumo anterior ao pagamento, precisa estar atrelado a um cliente.
-[] - Somente clientes
+[] - Optei por adicionar o frete na conta final e não, no custo do produto atrelado ao frete ou pagamento de taxas.
+
+Faturamento Bruto -> Valor que o cliente pagou.
+Faturamento Líquido -> Dinheiro recebido do cliente. Remoção de Mquininha.
+Lucro bruto -> A subtração do Faturamento Líquido pelo Custo
+
+# DOCUMENTAÇÃO
+
+### Regras de negócio:
+
+##### Stock (Estoque):
+
+- (Método de estoque) Foi adotado o COGS para cada venda aliado ao método FIFO.
+
+  - Fácil rastreabilidade
+  - Acompanhamento de validade dos produtos.
+  - Margem precisa.
+
+- (Rateio de frete e taxas) Eu tinha duas opções para realizar os rateios do frete:
+  1. Rateio por quantidade:
+     - Dividir os custos da operação entre o quantitativo de produtos.
+  2. Rateio por valor:
+     - Dividir os custos da operação entre o valor pago por produto.
+
+### API - DOCS:
+
+[ ] - Usar o @nestjs/swagger swagger-ui-express para imprimir a documentação da API.
 
 # BACK-END
 
-## ROTAS:
-
-- [] Rota de fornecedores:
-  -
-
 Objetivos:
+
 [ ] - Preciso arrumar uma forma de colocar os dados de (Quantidade mínima para produtos com giro pequeno), caso contrário, produtos com pouco giro não conseguem se adequar a metodologia da média ponderada.
 [ ] - Melhorar as tags do product seeds para facilitar a pesquisa para o usuário.
 [ ] - Criar uma função que verifica uma vez por dia se o produto está em promoção ou não. Todos os dias, 07h.
@@ -41,4 +63,5 @@ Finalizar pedido.
 
 ### Objetivos:
 
-[ ]
+[ ] Colocar o cache para puxar uma vez por dia os dados de produtos , precisa separar para que o admin consiga puxar todo momento e o usuário, só puxa 1 vez por dia.
+Atualização constante para administrador.

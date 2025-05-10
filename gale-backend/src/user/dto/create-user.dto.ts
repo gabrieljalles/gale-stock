@@ -1,49 +1,62 @@
-import { AccountType, TypeAddress } from "@prisma/client";
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { AccountType, TypeAddress, GenderType } from '@prisma/client';
+import {
+  IsDate,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class CreateUserDto {
-    @IsNotEmpty()
-    @IsString()
-    fullName: string;
+  @IsNotEmpty()
+  @IsString()
+  fullName: string;
 
-    @IsNotEmpty()
-    @IsString()
-    cellPhone: string;
+  @IsNotEmpty()
+  @IsString()
+  cellPhone: string;
 
-    @IsNotEmpty()
-    @IsEmail() 
-    email: string;
+  @IsEnum(GenderType)
+  gender: GenderType;
 
-    @IsNotEmpty()
-    @IsString() 
-    cpfCNPJ: string;
+  @IsDateString()
+  dateOfBirth: string;
 
-    @IsNotEmpty()
-    @IsString()
-    @MinLength(6)
-    password: string;
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @IsString()
+  cpfCNPJ: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  password: string;
 }
 
 export class CreateUserAddressDto {
+  @IsEnum(TypeAddress)
+  typeAddress: TypeAddress;
 
-    @IsEnum(TypeAddress) 
-    typeAddress: TypeAddress;
+  @IsString()
+  address: string;
 
-    @IsString() 
-    address: string;
+  @IsString()
+  number: string;
 
-    @IsString() 
-    number: string;
+  @IsOptional()
+  @IsString()
+  complement?: string;
 
-    @IsOptional() 
-    @IsString() 
-    complement?: string;
+  @IsString()
+  district: string;
 
-    @IsString() 
-    district: string;
-
-    @IsOptional() 
-    @IsString() 
-    zipCode?: string;
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
 }
-
