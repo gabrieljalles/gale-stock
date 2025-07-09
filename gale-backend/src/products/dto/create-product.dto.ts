@@ -20,10 +20,6 @@ export class CreateProductDto {
   @IsEnum(Category)
   category: Category;
 
-  @IsArray()
-  @IsString({ each: true })
-  tags: string[];
-
   @IsEnum(SizeType)
   sizeType: SizeType;
 

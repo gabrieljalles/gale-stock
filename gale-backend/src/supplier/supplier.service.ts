@@ -1,11 +1,7 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupplierRepository } from './supplier.repository';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { Supplier } from '@prisma/client';
-
 
 @Injectable()
 export class SupplierService {
@@ -14,7 +10,6 @@ export class SupplierService {
   constructor(private readonly repository: SupplierRepository) {}
 
   async create(data: CreateSupplierDto): Promise<Supplier> {
-
     return this.repository.create(data);
   }
 

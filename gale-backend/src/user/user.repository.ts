@@ -2,13 +2,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; // adapte o caminho conforme sua estrutura
 import { CreateUserAddressDto, CreateUserDto } from './dto/create-user.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createUser(data: CreateUserDto & { password: string }) {
-    return this.prisma.user.create({ data });
+  async runInTransaction<T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(callback);
+  }
+
+  async createUser(
+    data: CreateUserDto & { password: string },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return client.user.create({ data });
   }
 
   async createUserAddress(userId: string, data: CreateUserAddressDto) {
@@ -29,11 +40,29 @@ export class UserRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  async findByCpfCNPJ(cpfCNPJ: string) {
+    return this.prisma.user.findUnique({ where: { cpfCNPJ } });
+  }
+
   async findById(userId: string) {
     return this.prisma.user.findUnique({ where: { id: userId } });
   }
 
   async findUserAddress(addressId: string) {
     return this.prisma.userAddress.findUnique({ where: { id: addressId } });
+  }
+
+  async updateVerifiedEmail(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { verifiedEmail: true },
+    });
+  }
+
+  async updatePassword(userId: string, hashedPassword: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
   }
 }

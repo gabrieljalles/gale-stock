@@ -4,6 +4,9 @@ import { usePathname } from "next/navigation"; // Next 13+ (App Router)
 // import { useRouter } from "next/router";     // Next 12 (Pages Router)
 import Link from "next/link";
 import Image from "next/image";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/_components/ui/button";
 
 interface NavButton {
   label: string;
@@ -30,22 +33,40 @@ const navItems: NavButton[] = [
 
 export default function SideBar() {
   const pathname = usePathname() ?? "";
-  // const { pathname } = useRouter(); // se usar Pages Router
+  const [open, setOpen] = useState(false);
 
   return (
-    <aside className="fixed h-screen w-64 rounded-md bg-white p-4">
-      <nav className="flex flex-col gap-2">
+    <aside
+      className={`h-full space-y-8 ${open ? "w-64" : "w-16"} flex flex-col rounded-md border border-black bg-white p-2`}
+    >
+      {/*Hamburguer*/}
+      <div
+        className={`flex w-full flex-row items-center ${open ? "justify-start" : "justify-center"}`}
+      >
+        <Button
+          className={`mb-4 flex h-11 w-11 items-center justify-center rounded transition hover:bg-gray-100 hover:bg-secondary`}
+          onClick={() => setOpen((prev) => !prev)}
+          aria-label={open ? "Fechar menu" : "Abrir menu"}
+        >
+          {open ? (
+            <X size={24} className="text-white" />
+          ) : (
+            <Menu size={24} className="text-white" />
+          )}
+        </Button>
+      </div>
+
+      {/*Navegation*/}
+      <nav className="mt-2 flex flex-col justify-center gap-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
-          const inactiveClasses = "hover:bg-gray-100";
           const baseActivateClass =
             "border rounded-md border-black shadow-gray-300 shadow-md scale-100";
-
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex h-10 w-full flex-row items-center gap-2 overflow-hidden px-3 ${isActive ? `${baseActivateClass} ${item.customClass}` : "hover:animate-pop transition-transform"} `}
+              className={`flex h-10 items-center gap-2 px-3 ${isActive ? `${baseActivateClass} ${item.customClass}` : "transition-transform hover:scale-105 hover:animate-pop"} `}
             >
               <Image
                 src={item.iconPath}
@@ -54,7 +75,12 @@ export default function SideBar() {
                 height={20}
                 className="transition-all duration-200"
               />
-              <span className="font-sans-ro transition-all duration-200">
+              {/* Só mostra o label quando expandido */}
+              <span
+                className={`font-sans-ro transition-all duration-200 ${
+                  open ? "ml-2 opacity-100" : "w-0 opacity-0"
+                }`}
+              >
                 {item.label}
               </span>
             </Link>

@@ -60,3 +60,8 @@ export class CreateUserAddressDto {
   @IsString()
   zipCode?: string;
 }
+
+export class ResendEmailDto {
+  @IsEmail()
+  email: string;
+}

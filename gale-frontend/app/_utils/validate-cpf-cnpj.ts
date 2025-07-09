@@ -1,4 +1,4 @@
-export function validateCpfCnpj(value: string): boolean {
+export function validateCpfCNPJ(value: string): boolean {
   const clean = value.replace(/\D/g, "");
 
   if (clean.length === 11) {

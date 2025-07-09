@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Menu, SquareMenu } from "lucide-react";
+import { AuthContext } from "@/_store/auth/AuthContext";
 
 const navItems = [
   { label: "Loja", href: "/" },
@@ -11,8 +12,9 @@ const navItems = [
 
 const HeaderComponent = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signout } = useContext(AuthContext);
   return (
-    <header className="fixed top-0 flex h-[70px] w-full bg-background">
+    <header className="fixed inset-0 top-0 flex h-[70px] w-full bg-background">
       <div className="max-w-1440 mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-full w-full flex-row items-center justify-between space-x-48">
           {/* Logo image */}
@@ -38,6 +40,14 @@ const HeaderComponent = () => {
 
           {/* Navigation links */}
           <div className="ml-auto hidden flex-1 items-center justify-end md:flex md:w-[600px] md:space-x-6 lg:w-[900px]">
+            {user ? (
+              <div>
+                <p>{user.name}</p>
+              </div>
+            ) : (
+              <a href="/login">Entrar</a>
+            )}
+
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -50,9 +60,6 @@ const HeaderComponent = () => {
 
             <Button className="border-2 border-primary bg-transparent transition-colors hover:border-secondary hover:text-secondary">
               <Link href="/login">Faça seu pedido</Link>
-            </Button>
-            <Button className="w-40 bg-primary font-semibold text-background transition-colors duration-500 hover:bg-secondary hover:text-primary">
-              <Link href="/cadastro">Cadastrar</Link>
             </Button>
           </div>
 

@@ -1,3 +1,4 @@
+import { isTokenValid } from "@/_utils/validate-token";
 import axios from "axios";
 
 const isBrowser = typeof window !== "undefined";
@@ -12,7 +13,8 @@ export const api = axios.create({ baseURL });
 api.interceptors.request.use((config) => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  if (token) {
+
+  if (token && isTokenValid(token)) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

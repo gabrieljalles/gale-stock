@@ -8,7 +8,7 @@ import { CreateStockTransactionDto } from './dto/create-transaction.dto';
 import { StockTransactionRepository } from './stock-transaction.repository';
 import { UpdateInstallmentDto } from './dto/update-transaction.dto';
 import { CatalogService } from 'src/catalog/catalog.service';
-import { getLandedUnitCost } from '../../utils/landedunitCost.utils';
+import { getLandedUnitCost } from '../../utils/landed-unit-cost.utils';
 
 @Injectable()
 export class StockTransactionService {

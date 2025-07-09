@@ -6,17 +6,17 @@ import Image from "next/image";
 import SideBar from "@/admin/_components/SideBar";
 import Header from "./_components/Header";
 import VideoCarousel from "./_components/Carousel";
+import Loading from "./_components/loadingComponent";
 
 export default function Home() {
   const videos = ["video-carousel/promocoes.mp4", "video-carousel/doces.mp4"];
 
   return (
     //main
-    <div className="mx-auto flex h-full w-[1440px] flex-col pt-[70px]">
+    <div className="mx-auto flex h-full w-[1440px] flex-col">
       <Header />
-
       {/* Hero section */}
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-4 p-2">
         <VideoCarousel videos={videos} />
         <div className="mx-auto h-40 w-full max-w-[1124px] bg-black"></div>
       </div>

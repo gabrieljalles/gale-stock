@@ -1,0 +1,130 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>{{title}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+      }
+      .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #000;
+        border-radius: 5px;
+        text-align: center;
+      }
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin-top: 8px;
+        background-color: #f8bd1e;
+        color: #000;
+        text-decoration: none;
+        border-radius: 5px;
+        border: 1px solid #000;
+        font-weight: bold;
+      }
+      span {
+        color: rgba(0, 0, 0, 0.514);
+        font-size: 12px;
+        font-weight: bold;
+      }
+      img {
+        margin-top: 10px;
+      }
+      table {
+        width: 100%;
+      }
+      td {
+        font-size: 10px;
+      }
+      .footer {
+        background-color: #f8bd1e; /* Azul */
+        color: #000;
+        padding: 4px;
+        border-radius: 5px;
+      }
+      a {
+        color: #000;
+        text-decoration: none;
+        margin-top: 20px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .links {
+        width: 100%;
+        padding: 10px 0;
+      }
+      .links td:nth-child(2),
+      td:nth-child(3) {
+        border-left: 3px solid #f8bd1e;
+      }
+      h3 {
+        margin: 4px 0;
+      }
+      h1 {
+        margin: 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <table>
+        <tr>
+          <td><h3>Bem vindo, {{name}}!</h3></td>
+        </tr>
+        <tr>
+          <td><span>❄️Falta pouco para você tomar sua breja geladíssima.❄️</span></td>
+        </tr>
+      </table>
+      <div style='width: 100%; text-align: center;'>
+        <img
+          src='cid:logo@galedelivery'
+          alt='Logo'
+          width='60'
+          height='60'
+          style='display: inline-block; outline: none; border: 0; text-decoration: none;'
+        />
+      </div>
+      <h1>Confirme seu Email</h1>
+      <p style='margin: 4px 0'>Obrigado por se registrar. Para completar o seu
+        cadastro, por favor verifique o seu e-mail clicando no botão abaixo:</p>
+      <a href='{{confirmationUrl}}' class='button'>Confirme seu E-mail</a>
+      <p style='margin: 4px 0'>Se você não se inscreveu no nosso site, por favor
+        ignore este e-mail.</p>
+      <span>Uma vez confirmado, esse e-mail será unicamente vinculado a sua
+        conta do Galé</span>
+      <div class='links'>
+        <table>
+          <tr>
+            <td><a href='{{siteUrl}}'>visite nosso site</a></td>
+            <td><a href='{{privacyUrl}}'>Política de Privacidade</a></td>
+            <td><a href='{{termsUrl}}'>Termos de uso</a></td>
+          </tr>
+        </table>
+      </div>
+      <div class='footer'>
+        <table>
+          <tr>
+            <td>© 2024 Galé - Delivery de bebidas. Todos os direitos
+              reservados.</td>
+          </tr>
+          <tr>
+            <td>CNPJ: 58.369.590/0001-04</td>
+          </tr>
+          <tr>
+            <td>Rua Gerôncio chaves, 564 - Jardim do rosário - Ituiutaba</td>
+          </tr>
+          <tr>
+            <td>Bebida gelada, na velocidade da sua sede.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

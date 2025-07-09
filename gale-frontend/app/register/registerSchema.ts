@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { validateCpfCnpj } from "@/_utils/validate-cpf-cnpj";
+import { validateCpfCNPJ } from "@/_utils/validate-cpf-cnpj";
 
 function calculateAge(dateString: string): number {
   const birthDate = new Date(dateString);
@@ -30,11 +30,11 @@ export const registerSchema = z
       },
     ),
     fullName: z.string().min(1, { message: "Nome completo é obrigatório." }),
-    phone: z.string().regex(/^\(\d{2}\)\s?\d{4,5}-\d{4}$/, {
+    cellPhone: z.string().regex(/^\(\d{2}\)\s?\d{4,5}-\d{4}$/, {
       message: "Digite um telefone válido.",
     }),
     email: z.string().email({ message: "Digite um email válido." }),
-    cpfCnpj: z.string().refine((value) => validateCpfCnpj(value), {
+    cpfCNPJ: z.string().refine((value) => validateCpfCNPJ(value), {
       message: "CPF/CNPJ inválido.",
     }),
     password: z

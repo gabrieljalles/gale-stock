@@ -13,7 +13,6 @@ model Product {
   barCode      String? @unique
   description  String?
   category     Category
-  tags         String[]
   sizeType     SizeType
   pack         Int
   size         String
@@ -27,12 +26,13 @@ model Product {
 
 model Supplier {
   id                  String             @id @default(cuid())
-  legalRepresentative String
+  legalRepresentative String?
   enterprise          String
+  completeAddress     String?
   cellphone           String
   appName             String?
   city                String
-  email               String? @unique
+  email               String?
   imgUrl              String?
   stockTransactions   StockTransaction[]
 }
@@ -80,18 +80,6 @@ model StockEntryDetail {
   
   product          Product          @relation(fields: [productId], references: [id])
   stockTransaction StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
-  stockMovements   StockMovement[]
-}
-
-model StockMovement {
-  id String @id @default(cuid())
-  stockEntryDetailId String
-  orderDetailId String
-  quantityMoved Int
-  movedAt DateTime @default(now())
-
-  stockEntryDetail StockEntryDetail @relation(fields: [stockEntryDetailId], references: [id], onDelete: Cascade)
-  orderDetail OrderDetail @relation(fields: [orderDetailId], references: [id], onDelete: Cascade)
 }
 
 model LostEntry {
@@ -159,7 +147,6 @@ model OrderDetail{
 
   catalog Catalog @relation(fields:[productId], references: [id])
   order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
-  stockMovements StockMovement[]
 }
 
 model OrderTransaction{
@@ -197,12 +184,13 @@ model User{
   dateOfBirth DateTime
   gender GenderType
   email String @unique
-  cpfCNPJ String
+  cpfCNPJ String @unique
   accountType AccountType? @default(Client)
   password String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   avatarUrl String?
+  verifiedEmail Boolean @default(false)
   canPayOnTheBill Boolean @default(false)
   clientOrders Order[] @relation("ClientOrders")
   deliveryOrders Order[] @relation("DeliveryOrders")
@@ -218,8 +206,23 @@ model UserAddress{
   complement String?
   district String
   zipCode String?
+  isPrimary Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+//Não vi a necessidade de atribuir a venda ao estoque retirado. Se a empresa se tornar distribuidora, farei isso.
+// model StockMovement {
+//   id String @id @default(cuid())
+//   stockEntryDetailId String
+//   orderDetailId String
+//   quantityMoved Int
+//   movedAt DateTime @default(now())
+
+//   stockEntryDetail StockEntryDetail @relation(fields: [stockEntryDetailId], references: [id], onDelete: Cascade)
+//   orderDetail OrderDetail @relation(fields: [orderDetailId], references: [id], onDelete: Cascade)
+// }
 
 enum TypeAddress {
   Street

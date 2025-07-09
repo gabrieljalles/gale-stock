@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Input } from "@/_components/ui/input";
 import { Button } from "@/_components/ui/button";
 import Link from "next/link";
-import { validateCpfCnpj } from "@/_utils/validate-cpf-cnpj";
+import { validateCpfCNPJ } from "@/_utils/validate-cpf-cnpj";
 import {
   Dialog,
   DialogClose,
@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTrigger,
 } from "@/_components/ui/dialog";
-import TermsOfUse from "@/_components/termOfUse";
+import TermsOfUse from "@/_components/termsOfUse";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import LogoComponent from "@/_components/LogoComponent";
 import {
@@ -26,8 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/_components/ui/select";
-import { DatePicker } from "@/_components/DatePicker";
-import { Calendar } from "@/_components/ui/calendar";
+import {
+  register as apiRegister,
+  resendEmail as apiResendEmail,
+} from "@/api/auth";
+import { formatPhone } from "@/_utils/format-phone";
+import { formatCpfCNPJ } from "@/_utils/format-cpf-cnpj";
+import TermsDialog from "./_components/terms-dialog";
+import RegistrationSuccessDialog from "./_components/success-registration-dialog";
+import { IterationCw } from "lucide-react";
+import axios from "axios";
 
 type RegisterFormInputs = z.infer<typeof registerSchema>;
 
@@ -37,28 +45,62 @@ const RegisterPage: React.FC = () => {
     handleSubmit,
     watch,
     control,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormInputs>({
     resolver: zodResolver(registerSchema),
     mode: "onChange",
   });
 
-  const cpfCnpjValue = watch("cpfCnpj") || "";
-  const isCpfCnpjValid = validateCpfCnpj(cpfCnpjValue);
-
-  const onSubmit = (data: RegisterFormInputs) => {
-    console.log("Dados de registro:", data);
-  };
+  const cpfCNPJValue = watch("cpfCNPJ") || "";
+  const isCpfCNPJValid = validateCpfCNPJ(cpfCNPJValue);
 
   const [showTerms, setShowTerms] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [date, setDate] = React.useState<Date>();
+
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdEmail, setCreatedEmail] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (data: RegisterFormInputs) => {
+    setLoading(true);
+    try {
+      const payload = {
+        ...data,
+        dateOfBirth: new Date(data.dateOfBirth).toISOString(),
+      };
+
+      const response = await apiRegister(payload);
+      if (response.user) {
+        setCreatedEmail(response.user.email);
+        setShowSuccess(true);
+      } else {
+        console.error("Erro no cadastro:", response.error);
+      }
+    } catch (err: any) {
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
+        const msg: string = err.response.data.message;
+        setError("email", { type: "manual", message: msg });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async (email: string) => {
+    try {
+      await apiResendEmail(email);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-secondary">
-      <div className="flex w-[375px] flex-col justify-center rounded-2xl bg-white p-6 shadow-lg">
+      <div className="flex w-full max-w-[400px] flex-col justify-center rounded-2xl bg-white p-4 shadow-lg">
         <LogoComponent />
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-1">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           {/* Email */}
           <div>
             <label className="mb-0.5 block text-[12px] font-medium">
@@ -79,23 +121,35 @@ const RegisterPage: React.FC = () => {
           {/* CPF/CNPJ */}
           <div>
             <label className="mb-0.5block text-[12px] font-medium">
-              CPF/CNPJ
+              CPF/CNPJ{" "}
+              <span className="text-[10px] text-gray-500">*Apenas números</span>
             </label>
-            <Input
-              type="text"
-              placeholder="000.000.000-00 / 00.000.000/0000-00"
-              className={`rounded border p-2 ${
-                errors.cpfCnpj
-                  ? "border-red-500"
-                  : cpfCnpjValue && isCpfCnpjValid
-                    ? "border-green-500"
-                    : "border-gray-300"
-              }`}
-              {...register("cpfCnpj")}
+            <Controller
+              name="cpfCNPJ"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="text"
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    // aplica a máscara conforme digita
+                    const masked = formatCpfCNPJ(e.target.value);
+                    field.onChange(masked);
+                  }}
+                  className={`rounded border p-2 ${
+                    errors.cpfCNPJ
+                      ? "border-red-500"
+                      : cpfCNPJValue && isCpfCNPJValid
+                        ? "border-green-500"
+                        : "border-gray-300"
+                  }`}
+                />
+              )}
             />
-            {errors.cpfCnpj && (
+            {errors.cpfCNPJ && (
               <p className="mb-0.5 text-xs text-red-500">
-                {errors.cpfCnpj.message}
+                {errors.cpfCNPJ.message}
               </p>
             )}
           </div>
@@ -183,14 +237,25 @@ const RegisterPage: React.FC = () => {
             <label className="mb-0.5 block text-[12px] font-medium">
               Telefone para contato
             </label>
-            <Input
-              type="text"
-              placeholder="(34) 99999-9999"
-              {...register("phone")}
+            <Controller
+              name="cellPhone"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="text"
+                  placeholder="(34) 99999-9999"
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    const masked = formatPhone(e.target.value);
+                    field.onChange(masked);
+                  }}
+                  className="w-full rounded border border-gray-300 p-2 text-sm focus:border-primary focus:ring-primary"
+                />
+              )}
             />
-            {errors.phone && (
+            {errors.cellPhone && (
               <p className="mb-0.5 text-xs text-red-500">
-                {errors.phone.message}
+                {errors.cellPhone.message}
               </p>
             )}
           </div>
@@ -227,65 +292,16 @@ const RegisterPage: React.FC = () => {
           </div>
 
           {/* Botão para abrir termos */}
-          <Dialog open={showTerms} onOpenChange={setShowTerms}>
-            <DialogTrigger asChild>
-              <Button
-                variant="link"
-                className={`w-full text-[12px] underline hover:text-secondary ${acceptedTerms ? "text-green-500" : "text-black"}`}
-              >
-                <Input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={() => {
-                    if (!acceptedTerms) {
-                      setShowTerms(true);
-                    } else {
-                      setAcceptedTerms(false);
-                    }
-                  }}
-                  className={`rounde4 h-3 w-3 border-2 border-black accent-green-500 hover:border-secondary focus:ring-primary`}
-                />
-                Aceite os termos de uso
-              </Button>
-            </DialogTrigger>
-
-            {/* Fazemos o container flex para distribuir header, body e footer */}
-            <DialogContent className="flex max-h-[88vh] w-full flex-col px-6">
-              <DialogHeader className="flex items-center justify-center">
-                <DialogTitle className="text-lg font-medium">
-                  Termos de uso
-                </DialogTitle>
-              </DialogHeader>
-
-              {/* Div scrollável que ocupa o espaço restante */}
-              <div className="flex-1 overflow-y-auto px-0">
-                <TermsOfUse />
-              </div>
-
-              <DialogFooter className="flex justify-end space-x-2">
-                {/* Fecha sem aceitar */}
-                <DialogClose asChild>
-                  <Button
-                    variant="outline"
-                    className="hover:bg-red-500 hover:text-white"
-                  >
-                    Sair
-                  </Button>
-                </DialogClose>
-
-                {/* Aceita e fecha */}
-                <DialogClose asChild>
-                  <Button
-                    variant="default"
-                    onClick={() => setAcceptedTerms(true)}
-                    className="text-white hover:bg-green-500"
-                  >
-                    Concordar
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <TermsDialog
+            open={showTerms}
+            onOpenChange={setShowTerms}
+            accepted={acceptedTerms}
+            onAcceptedChange={setAcceptedTerms}
+            triggerLabel="Aceite os termos de uso"
+            title="Termos de uso"
+          >
+            <TermsOfUse />
+          </TermsDialog>
 
           {/* Submit só se termos aceitos */}
           <Button
@@ -293,8 +309,16 @@ const RegisterPage: React.FC = () => {
             className="mt-12 w-full text-white hover:bg-secondary hover:text-primary"
             disabled={isSubmitting || !acceptedTerms}
           >
-            Registrar
+            {loading ? <IterationCw className="animate-spin" /> : "Registrar"}
           </Button>
+
+          {/* Popup de sucesso*/}
+          <RegistrationSuccessDialog
+            open={showSuccess}
+            onOpenChange={setShowSuccess}
+            email={createdEmail}
+            onResend={handleResend}
+          />
 
           {/* Volta para o login */}
           <div className="mt-8 text-center font-extralight">

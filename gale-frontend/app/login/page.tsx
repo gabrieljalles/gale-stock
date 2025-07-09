@@ -1,19 +1,28 @@
 "use client";
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../login/loginSchema";
 import { z } from "zod";
 import { Input } from "@/_components/ui/input";
 import { Button } from "@/_components/ui/button";
-import Link from "next/link";
-import Image from "next/image";
 import { Mail, Lock } from "lucide-react";
 import LogoComponent from "@/_components/LogoComponent";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import ForgetPasswordDialog from "./_components/forget-password-dialog";
+import { sendPasswordResetEmail } from "@/api/auth";
+import Link from "next/link";
+import { AuthContext } from "@/_store/auth/AuthContext";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const LoginPage: React.FC = () => {
+  const [showDialog, setShowDialog] = useState(false);
+  const { signin } = useContext(AuthContext);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
@@ -22,9 +31,28 @@ const LoginPage: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormInputs) => {
-    console.log("Dados de login:", data);
-    // Aqui você pode chamar sua função de login
+  //Mostra um toast se o usuário acabou de verificar o E-MAIL.
+  useEffect(() => {
+    const verified = searchParams.get("verified");
+    if (verified === "1") {
+      toast.success("E-mail confirmado!", {
+        description: "Seja muito bem vindo a família Galé.",
+      });
+      router.replace("/login", { scroll: false });
+    }
+  }, [searchParams, router, toast]);
+
+  //Efetuar login
+  const onSubmit = async (data: LoginFormInputs) => {
+    try {
+      await signin(data.email, data.password);
+      toast.success("Logado com sucesso!");
+      router.push("/admin/stock");
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message || err.message || "Falha de login",
+      );
+    }
   };
 
   return (
@@ -33,7 +61,7 @@ const LoginPage: React.FC = () => {
         <LogoComponent />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
+            <label className="mb-0 block text-sm font-medium">Email</label>
             <div className="relative">
               <Mail
                 size={20}
@@ -54,7 +82,7 @@ const LoginPage: React.FC = () => {
             )}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Senha</label>
+            <label className="mb-0 block text-sm font-medium">Senha</label>
             <div className="relative">
               <Lock
                 size={20}
@@ -73,6 +101,15 @@ const LoginPage: React.FC = () => {
                 {errors.password.message}
               </p>
             )}
+            <div className="flex justify-end p-0">
+              <Button
+                type="button"
+                onClick={() => setShowDialog(true)}
+                className="bg-transparent p-0 text-[12px] text-primary hover:text-red-500"
+              >
+                Esqueci minha senha!
+              </Button>
+            </div>
           </div>
           <Button
             type="submit"
@@ -83,7 +120,7 @@ const LoginPage: React.FC = () => {
           </Button>
           <div className="mt-4 text-center font-extralight">
             <span className="text-sm font-thin text-gray-500">
-              Não possui conta?{" "}
+              Não possui conta?{"  "}
               <Button asChild className="bg-transparent p-0">
                 <Link
                   href="/register"
@@ -96,6 +133,22 @@ const LoginPage: React.FC = () => {
           </div>
         </form>
       </div>
+
+      <ForgetPasswordDialog
+        open={showDialog}
+        onOpenChange={setShowDialog}
+        onSend={async (email) => {
+          await sendPasswordResetEmail(email);
+          toast.success("E-mail de mudança de senha enviado", {
+            unstyled: true,
+            className:
+              "bg-green-500 gap-2 flex flex-start rounded-md items-center px-4 py-3 text-white",
+            description: "Visite seu e-mail e troque sua senha.",
+          });
+          router.replace("/login", { scroll: false });
+          setShowDialog(false);
+        }}
+      />
     </div>
   );
 };

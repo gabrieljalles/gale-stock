@@ -50,7 +50,7 @@ export class LostEntryService {
   async deleteLoss(id: string) {
     return this.repository.runInTransaction(async (tx) => {
       try {
-        const loss = this.repository.findLossById(id);
+        const loss = await this.repository.findLossById(id);
 
         if (!loss) {
           throw new NotFoundException('Perda não encontrada.');

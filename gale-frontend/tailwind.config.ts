@@ -1,5 +1,7 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+import type { Config } from "tailwindcss";
+
+import { withUt } from "uploadthing/tw";
+const config: Config = {
   darkMode: "class",
   content: ["./app/**/*.{html,js,ts,jsx,tsx}"],
   theme: {
@@ -23,6 +25,7 @@ module.exports = {
       animation: {
         pop: "pop 300ms ease-out forwards",
         float: "float 3s ease-in-out infinite",
+        slowSpin: "spin 5s linear infinite",
       },
       fontFamily: {
         sans: ['"Roboto"', "sans-serif"],
@@ -31,3 +34,5 @@ module.exports = {
   },
   plugins: [],
 };
+
+export default withUt(config);

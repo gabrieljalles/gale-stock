@@ -1,4 +1,10 @@
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  isEmail,
+} from 'class-validator';
 
 export class CreateSupplierDto {
   @IsString()
@@ -6,6 +12,10 @@ export class CreateSupplierDto {
 
   @IsString()
   enterprise: string;
+
+  @IsString()
+  @IsOptional()
+  completeAddress: string;
 
   @IsString()
   city: string;
@@ -18,4 +28,10 @@ export class CreateSupplierDto {
   @IsOptional()
   @IsString()
   appName?: string;
+
+  @IsString()
+  email?: string;
+
+  @IsString()
+  imgUrl?: string;
 }
