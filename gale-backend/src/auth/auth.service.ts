@@ -39,7 +39,9 @@ export class AuthService {
       };
       console.log('User successfully logged.');
       return {
-        access_token: this.jwtService.sign(payload),
+        access_token: this.jwtService.sign(payload, {
+          expiresIn: process.env.JWT_EXPIRATION || '7d',
+        }),
       };
     } catch (err) {
       console.error('Error logging or generating token:', err);
@@ -56,6 +58,7 @@ export class AuthService {
     const hashed = await bcrypt.hash(newPassword, 10);
     await this.userService.updatePassword(payload.sub, hashed);
   }
+
   //Quando o usuário verifica o EMAIL
   async verifyEmail(token: string): Promise<boolean> {
     try {

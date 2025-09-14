@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpException,
   HttpStatus,
   Param,
@@ -21,6 +22,13 @@ export class StockTransactionController {
   constructor(
     private readonly stockTransactionService: StockTransactionService,
   ) {}
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async getTransactions() {
+    return await this.stockTransactionService.getTransactions();
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -60,6 +68,27 @@ export class StockTransactionController {
     }
   }
 
+  @Get('product-details')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async getStockEntryDetails() {
+    return await this.stockTransactionService.getStockEntryDetails();
+  }
+
+  @Get('installments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async getInstallmentsSummary() {
+    return await this.stockTransactionService.getInstallments();
+  }
+
+  @Get(':id/installments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async getInstallments(@Param('id') id: string) {
+    return await this.stockTransactionService.getInstallmentsByTransaction(id);
+  }
+
   @Patch('/installment/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'Shopper')
@@ -67,6 +96,51 @@ export class StockTransactionController {
     @Param('id') id: string,
     @Body() dto: UpdateInstallmentDto,
   ) {
-    return this.stockTransactionService.updateInstallment(id, dto);
+    try {
+      const result = await this.stockTransactionService.updateInstallment(
+        id,
+        dto,
+      );
+      return {
+        message: 'Parcela atualizada com sucesso',
+        installment: result,
+      };
+    } catch (error) {
+      console.error('Error updating installment:', error);
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Erro ao atualizar parcela',
+          details: error.message || error,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Patch('/installment/:id/toggle')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async toggleInstallmentPaidDate(@Param('id') id: string) {
+    try {
+      const result = await this.stockTransactionService.updateInstallment(
+        id,
+        {},
+      );
+      return {
+        message: 'Status da parcela alterado com sucesso',
+        installment: result,
+      };
+    } catch (error) {
+      console.error('Error toggling installment:', error);
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Erro ao alterar status da parcela',
+          details: error.message || error,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

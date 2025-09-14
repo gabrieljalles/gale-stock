@@ -12,7 +12,7 @@ import { CirclePlus } from "lucide-react";
 import { useContext, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
-import NameInputAutocomplete from "./nameAutoCompleteInput";
+import NameInputAutocomplete from "../_tabs/products/_components/nameAutoCompleteInput";
 import {
   Select,
   SelectContent,
@@ -29,13 +29,18 @@ import {
   categoryMap,
 } from "@/_constants/product";
 import { Input } from "@/_components/ui/input";
-import ImageUploadInput from "./imageUploadInput";
+import ImageUploadInput from "../_tabs/products/_components/imageUploadInput";
 import { AuthContext } from "@/_store/auth/AuthContext";
 import { createProduct } from "@/api/product";
 import { useProducts } from "@/_store/products/ProductContext";
 import { toast } from "sonner";
 
-const categoryEnum = z.enum(categoryOptions as [keyof typeof categoryMap, ...(keyof typeof categoryMap)[]]);
+const categoryEnum = z.enum(
+  categoryOptions as [
+    keyof typeof categoryMap,
+    ...(keyof typeof categoryMap)[],
+  ],
+);
 
 const schema = z.object({
   name: z
@@ -46,14 +51,19 @@ const schema = z.object({
   sizeType: z.enum([...sizeTypeOptions] as [string, ...string[]], {
     required_error: "Tipo de tamanho obrigatório",
   }),
+  nfeAccessKey: z.string().optional(),
   size: z
-  .string()
-  .min(1, "Tamanho obrigatório")
-  .max(4, "Tamanho deve ter no máximo 4 caracteres"),
+    .string()
+    .min(1, "Tamanho obrigatório")
+    .max(4, "Tamanho deve ter no máximo 4 caracteres")
+    .refine((val) => {
+      const numberRegex = /^\d+([,.]?\d+)?$/;
+      return numberRegex.test(val);
+    }, "Formato inválido. Use números como: 2,5 ou 310"),
   pack: z
-  .string()
-  .min(1, "Pack obrigatório")
-  .max(3, "Pack deve ter no máximo 3 caracteres"),
+    .string()
+    .min(1, "Pack obrigatório")
+    .max(3, "Pack deve ter no máximo 3 caracteres"),
   imgUrl: z.string().url("URL da imagem inválida"),
 });
 
@@ -62,7 +72,7 @@ type FormData = z.infer<typeof schema>;
 const NewProduct = () => {
   const [open, setOpen] = useState(false);
   const { user } = useContext(AuthContext);
-  const {addProduct} = useProducts();
+  const { addProduct } = useProducts();
 
   if (!user || !["Admin"].includes(user.role)) {
     return <div></div>;
@@ -80,20 +90,21 @@ const NewProduct = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
+      const sizeFormatted = data.size.replace(",", ".");
       const created = await createProduct({
         name: data.name,
         category: data.category as keyof typeof categoryMap,
         description: data.description,
         sizeType: data.sizeType as "g" | "L" | "ml" | "mg" | "kg" | "un",
-        size: data.size, 
+        size: sizeFormatted,
         pack: Number(data.pack),
         imgUrl: data.imgUrl,
       });
-      toast.success("Produto criado com sucesso!");   
+      toast.success("Produto criado com sucesso!");
       addProduct(created);
       reset();
       setOpen(false);
-      toast.success("Produto criado com sucesso!"); 
+      toast.success("Produto criado com sucesso!");
     } catch (error) {}
     reset();
     setOpen(false);
@@ -122,7 +133,7 @@ const NewProduct = () => {
           <FormProvider {...methods}>
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-1 flex-col gap-2 p-4 overflow-y-auto"
+              className="flex flex-1 flex-col gap-2 overflow-y-auto p-4"
             >
               {/* Nome */}
               <div>
@@ -137,9 +148,9 @@ const NewProduct = () => {
 
               {/*Categoria  */}
               <div>
-                <label className="mb-1 block text-xs font-bold ">
+                <label className="mb-1 block text-xs font-bold">
                   Categoria
-                  </label>
+                </label>
                 <Controller
                   name="category"
                   control={methods.control}
@@ -169,7 +180,7 @@ const NewProduct = () => {
 
               {/* Descrição */}
               <div>
-                <label className="mb-1 block text-xs font-bold ">
+                <label className="mb-1 block text-xs font-bold">
                   Descrição
                 </label>
                 <textarea
@@ -191,10 +202,7 @@ const NewProduct = () => {
                   name="sizeType"
                   control={methods.control}
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione tipo..." />
                       </SelectTrigger>
@@ -220,9 +228,9 @@ const NewProduct = () => {
 
               {/* Tamanho */}
               <div>
-                <label className="mb-1 block text-xs font-bold ">Tamanho</label>
+                <label className="mb-1 block text-xs font-bold">Tamanho</label>
                 <Input
-                  type="number"
+                  type="text"
                   {...methods.register("size")}
                   placeholder="Ex: 310"
                 />
@@ -235,7 +243,7 @@ const NewProduct = () => {
 
               {/* Pack*/}
               <div>
-                <label className="mb-1 block text-xs font-bold ">Pack</label>
+                <label className="mb-1 block text-xs font-bold">Pack</label>
                 <Input
                   type="text"
                   {...methods.register("pack")}
@@ -251,23 +259,23 @@ const NewProduct = () => {
               {/* img */}
               <div>
                 <Controller
-                name = "imgUrl"
-                control = {methods.control}
-                render = {({ field }) => (
-                  <ImageUploadInput 
-                  value = {field.value}
-                  onChange = {field.onChange}
-                  />
-                )}
+                  name="imgUrl"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <ImageUploadInput
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
                 {errors.imgUrl && (
-                <span className="text-xs text-red-500">
-                  {errors.imgUrl.message}
-                </span>
+                  <span className="text-xs text-red-500">
+                    {errors.imgUrl.message}
+                  </span>
                 )}
               </div>
 
-              <div className=" flex p-4 border-t gap-2">
+              <div className="flex gap-2 border-t p-4">
                 <Button
                   type="submit"
                   className="flex-1 text-white hover:bg-green-500"

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; // adapte o caminho conforme sua estrutura
 import { CreateUserAddressDto, CreateUserDto } from './dto/create-user.dto';
 import { Prisma } from '@prisma/client';
+import { generatePrefixedId } from 'src/utils/generate-prefix-id';
 
 @Injectable()
 export class UserRepository {
@@ -19,7 +20,12 @@ export class UserRepository {
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx ?? this.prisma;
-    return client.user.create({ data });
+    return client.user.create({
+      data: {
+        id: generatePrefixedId('U', 5),
+        ...data,
+      },
+    });
   }
 
   async createUserAddress(userId: string, data: CreateUserAddressDto) {

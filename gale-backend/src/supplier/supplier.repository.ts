@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Supplier, Prisma } from '@prisma/client';
+import { generatePrefixedId } from 'src/utils/generate-prefix-id';
 
 @Injectable()
 export class SupplierRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: Prisma.SupplierCreateInput): Promise<Supplier> {
-    return this.prisma.supplier.create({ data });
+  async create(
+    data: Omit<Prisma.SupplierCreateInput, 'id'>,
+  ): Promise<Supplier> {
+    return this.prisma.supplier.create({
+      data: {
+        id: generatePrefixedId('S', 6),
+        ...data,
+      },
+    });
   }
 
   async findAll(): Promise<Supplier[]> {

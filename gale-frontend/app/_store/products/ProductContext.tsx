@@ -1,5 +1,6 @@
 "use client";
-import { getProducts, ProductProps } from "@/api/product";
+import { ProductProps } from "@/_types";
+import { getProducts } from "@/api/product";
 import {
   createContext,
   ReactNode,
@@ -47,17 +48,24 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     fetch();
   }, []);
 
-  const addProduct = (p:ProductProps) => {
-    setProducts((prev) => prev ? [p, ...prev] : [p])
-  }
+  const addProduct = (p: ProductProps) => {
+    setProducts((prev) => (prev ? [p, ...prev] : [p]));
+  };
 
   const removeProduct = (id: string) => {
-    setProducts((prev) => prev ? prev.filter((p) => p.id !== id) : []);
+    setProducts((prev) => (prev ? prev.filter((p) => p.id !== id) : []));
   };
 
   return (
     <ProductContext.Provider
-      value={{ products, loading, addProduct, removeProduct, error, refresh: fetch }}
+      value={{
+        products,
+        loading,
+        addProduct,
+        removeProduct,
+        error,
+        refresh: fetch,
+      }}
     >
       {children}
     </ProductContext.Provider>

@@ -13,7 +13,9 @@ export const categoryMap = {
 } as const;
 
 export type CategoryType = keyof typeof categoryMap;
-export const categoryOptions = Object.keys(categoryMap) as Array<keyof typeof categoryMap>;
+export const categoryOptions = Object.keys(categoryMap) as Array<
+  keyof typeof categoryMap
+>;
 
 export function translateCategory(category: string): string {
   return categoryMap[category as CategoryType] || category;

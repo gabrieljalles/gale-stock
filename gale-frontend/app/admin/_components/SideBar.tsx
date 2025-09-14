@@ -16,19 +16,39 @@ interface NavButton {
 }
 
 const navItems: NavButton[] = [
-  { label: "Resumo", href: "/resume", iconPath: "/admin/ShoppingMall.svg" },
-  { label: "Catálogo", href: "/catalog", iconPath: "/admin/menu.svg" },
-  { label: "Promoções", href: "/discount", iconPath: "/admin/Discount.svg" },
-  { label: "Pedidos", href: "/orders", iconPath: "/admin/Notepad.svg" },
-  { label: "Vendas", href: "/sells", iconPath: "/admin/Vector.svg" },
+  {
+    label: "Resumo",
+    href: "/admin/resume",
+    iconPath: "/admin/ShoppingMall.svg",
+    customClass: "bg-[#fff]",
+  },
+  { label: "Catálogo", href: "/admin/catalog", iconPath: "/admin/menu.svg" },
+  {
+    label: "Promoções",
+    href: "/admin/discount",
+    iconPath: "/admin/Discount.svg",
+  },
+  { label: "Pedidos", href: "/admin/orders", iconPath: "/admin/Notepad.svg" },
+  { label: "Vendas", href: "/admin/sells", iconPath: "/admin/Vector.svg" },
   {
     label: "Estoque",
     href: "/admin/stock",
     iconPath: "/admin/estoque.svg",
     customClass: "bg-[#7DF1CC]",
   },
-  { label: "Usuários", href: "/users", iconPath: "/admin/User.svg" },
-  { label: "Fornecedores", href: "/suppliers", iconPath: "/admin/Truck.svg" },
+  { label: "Usuários", href: "/admin/users", iconPath: "/admin/User.svg" },
+  {
+    label: "Fornecedores",
+    href: "/admin/suppliers",
+    iconPath: "/admin/Truck.svg",
+    customClass: "bg-[#FFD700]",
+  },
+  {
+    label: "Financeiro",
+    href: "/admin/finance",
+    iconPath: "/admin/financas.svg",
+    customClass: "bg-[#FFD700]",
+  },
 ];
 
 export default function SideBar() {

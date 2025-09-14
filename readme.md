@@ -1,12 +1,17 @@
 Perguntas para o cliente (LEO)
 [] - Perguntar para o Leo se o turno da noite pode ser um desconto inferior ao turno da manhã se o cliente atinge a quantidade Mínima de produtos para ter promoção.
 [] - Falar para o Leo sobre consumo anterior ao pagamento, precisa estar atrelado a um cliente.
-[] - Optei por adicionar o frete na conta final e não, no custo do produto atrelado ao frete ou pagamento de taxas.
 [] - Explicar o Pack (na hora de criar um novo produto)
 
-Faturamento Bruto -> Valor que o cliente pagou.
-Faturamento Líquido -> Dinheiro recebido do cliente. Remoção de Mquininha.
-Lucro bruto -> A subtração do Faturamento Líquido pelo Custo
+Receita bruta (RB) -> Valor que o cliente pagou.
+Receita líquida (RL) = (RB) - Imposto (0,04\*FB (Valor alterável))
+
+Lucro bruto -> A subtração do Faturamento Líquido pelo Custo de produção
+
+# CONFIGURAÇÕES DO SISTEMA
+
+- 🚚 Frete de entrega
+-
 
 # DOCUMENTAÇÃO
 

@@ -23,7 +23,25 @@ export class CatalogService {
     consumerPrice?: Prisma.Decimal,
     tx?: Prisma.TransactionClient,
   ) {
-    return await this.repository.create(productId, consumerPrice, tx);
+    // Se consumerPrice foi fornecido, calcular os preços derivados
+    let consumerNightPrice: Prisma.Decimal | undefined;
+    let consumerIfoodPrice: Prisma.Decimal | undefined;
+
+    if (consumerPrice) {
+      // consumerNightPrice = consumerPrice / 0.95
+      consumerNightPrice = new Prisma.Decimal(consumerPrice).div(0.9);
+
+      // consumerIfoodPrice = consumerPrice / 0.8
+      consumerIfoodPrice = new Prisma.Decimal(consumerPrice).div(0.8);
+    }
+
+    return await this.repository.create(
+      productId,
+      consumerPrice,
+      consumerNightPrice,
+      consumerIfoodPrice,
+      tx,
+    );
   }
 
   //Precisa criar um multiplicador para nightPrice
@@ -31,37 +49,11 @@ export class CatalogService {
     return await this.repository.update(id, data);
   }
 
-  //Função que aumenta ou diminui a quantidade de produto em catalog.
-  // async adjustStock(
-  //   catalogId: string,
-  //   data: UpdateCatalogDto,
-  //   operation: 'increment' | 'decrement',
-  //   tx?: Prisma.TransactionClient
-  // ){
-  //   const catalog = await this.repository.findById(catalogId, tx);
-
-  //   if(!catalog){
-  //     throw new Error(`Produto com ID ${catalogId} não encontrado.`);
-  //   }
-
-  //   if( data.stock === undefined){
-  //     throw new Error('Quantidade deve ser informada para ajustar estoque.')
-  //   }
-
-  //   if(data.stock < 0){
-  //     throw new Error("Quantidade não pode ser negativa.");
-  //   }
-
-  //   let newStock = catalog.;
-
-  //   if(operation === 'increment'){
-  //     newStock += data.stock;
-  //   } else if (operation === 'decrement'){
-  //     if (catalog.stock < data.stock){
-  //       throw new Error(`Estoque insuficiente para o produto ${catalogId}. Atual: ${catalog.stock}, Tentando remover: ${data.stock}`);
-  //     }
-  //     newStock -= data.stock;
-  //   }
-  //   return await this.repository.update(catalogId, {stock: newStock }, tx);
-  // }
+  async updateProductsAvailability(
+    productIds: string[],
+    available: boolean,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return await this.repository.updateManyAvailability(productIds, available, tx);
+  }
 }

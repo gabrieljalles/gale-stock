@@ -12,10 +12,17 @@ import { getLandedUnitCost } from '../../utils/landed-unit-cost.utils';
 
 @Injectable()
 export class StockTransactionService {
+  findAllInstallments() {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     private readonly repository: StockTransactionRepository,
     private readonly catalogService: CatalogService,
   ) {}
+
+  async getTransactions() {
+    return await this.repository.findAllTransactions();
+  }
 
   async create(dto: CreateStockTransactionDto) {
     const { installments, stockEntryDetail, supplierId, ...rest } = dto;
@@ -50,6 +57,7 @@ export class StockTransactionService {
             freightCost: dto.freightCost,
             feeCost: dto.feeCost,
             totalCost: dto.totalCost,
+            nfeAccessKey: dto.nfeAccessKey,
             statusCheckout,
           },
           tx,
@@ -64,6 +72,11 @@ export class StockTransactionService {
         if (dto.numberPayments > 0 && dto.firstPaymentDate) {
           const firstDate = new Date(dto.firstPaymentDate);
 
+          const shouldAutoPay = ['DebitCard', 'Money', 'Pix'].includes(
+            dto.transactionType,
+          );
+          const paidDate = shouldAutoPay ? new Date() : null;
+
           const installmentsToCreate = Array.from({
             length: dto.numberPayments,
           }).map((_, index) => {
@@ -76,6 +89,7 @@ export class StockTransactionService {
               installmentNumber: index + 1,
               dueDate,
               fragmentCost: +(dto.totalCost / dto.numberPayments).toFixed(2),
+              paidDate,
             };
           });
 
@@ -114,6 +128,10 @@ export class StockTransactionService {
             })),
             tx,
           );
+
+          // Atualizar catalog para marcar produtos como disponíveis
+          const productIds = stockEntryDetail.map((p) => p.productId);
+          await this.catalogService.updateProductsAvailability(productIds, true, tx);
         }
         console.log('✅ Products inserted');
       } catch (err) {
@@ -132,13 +150,35 @@ export class StockTransactionService {
         throw new NotFoundException('Transação não encontrada');
       }
 
-      return this.repository.deleteTransaction(id, tx);
+      // Buscar todos os produtos da transação que será deletada
+      const stockEntryDetails = await this.repository.findAllEntryDetailsByTransaction(id, tx);
+      const productIds = stockEntryDetails.map(detail => detail.productId);
+
+      // Deletar a transação (isso deletará automaticamente os stockEntryDetails devido ao onDelete: Cascade)
+      const deletedTransaction = await this.repository.deleteTransaction(id, tx);
+
+      // Verificar se ainda há estoque disponível para cada produto após a exclusão
+      if (productIds.length > 0) {
+        await this.updateCatalogAvailabilityAfterDeletion(productIds, tx);
+      }
+
+      return deletedTransaction;
     });
   }
 
-  async updateInstallment(id: string, dto: UpdateInstallmentDto) {
-    const paidDate = dto.paidDate ? new Date(dto.paidDate) : undefined;
+  async getInstallments() {
+    return this.repository.findAllInstallments();
+  }
 
+  async getStockEntryDetails() {
+    return this.repository.findAllStockEntryDetails();
+  }
+
+  async getInstallmentsByTransaction(id: string) {
+    return this.repository.findAllInstallmentsByTransaction(id);
+  }
+
+  async updateInstallment(id: string, dto: UpdateInstallmentDto) {
     return this.repository.runInTransaction(async (tx) => {
       const installment = await this.repository.findUniqueInstallment(id, tx);
 
@@ -146,13 +186,23 @@ export class StockTransactionService {
         throw new NotFoundException('Parcela da transação não encontrada');
       }
 
-      const updatedInstallment = this.repository.updateInstallment(
+      let paidDate: Date | null;
+
+      // Se o DTO tem paidDate definido, usar esse valor
+      if (dto.paidDate !== undefined) {
+        paidDate = dto.paidDate ? new Date(dto.paidDate) : null;
+      } else {
+        // Se não tem paidDate no DTO, fazer toggle da parcela
+        paidDate = installment.paidDate ? null : new Date();
+      }
+
+      const updatedInstallment = await this.repository.updateInstallment(
         id,
         { paidDate },
         tx,
       );
 
-      const transactionId = (await updatedInstallment).stockTransactionId;
+      const transactionId = updatedInstallment.stockTransactionId;
 
       const transaction = await this.repository.findUniqueTransaction(
         transactionId,
@@ -163,20 +213,29 @@ export class StockTransactionService {
         throw new NotFoundException('Transação não encontrada');
       }
 
+      // Validar apenas se estamos marcando como pago (não para desmarcar)
       if (paidDate && paidDate < transaction.createdAt) {
         throw new BadRequestException(
           'A data de pagamento não pode ser anterior à data de criação da parcela/Transação.',
         );
       }
 
+      // Buscar todas as parcelas da transação para verificar se todas estão pagas
       const allInstallments =
         await this.repository.findAllInstallmentsByTransaction(
           transactionId,
           tx,
         );
 
-      const allPaid = allInstallments.every((i) => i.paidDate !== null);
+      // Verificar se todas as parcelas estão pagas (incluindo a que acabamos de atualizar)
+      const allPaid = allInstallments.every((i) => {
+        if (i.id === id) {
+          return paidDate !== null;
+        }
+        return i.paidDate !== null;
+      });
 
+      // Atualizar status da transação
       if (allPaid) {
         await tx.stockTransaction.update({
           where: { id: transactionId },
@@ -185,8 +244,34 @@ export class StockTransactionService {
           },
         });
         console.log(`✅ Transaction ${transactionId} concluded!`);
+      } else {
+        // Se nem todas estão pagas, marcar como Pending
+        await tx.stockTransaction.update({
+          where: { id: transactionId },
+          data: {
+            statusCheckout: 'Pending',
+          },
+        });
+        console.log(`🔄 Transaction ${transactionId} back to pending.`);
       }
+
       return updatedInstallment;
     });
+  }
+
+  private async updateCatalogAvailabilityAfterDeletion(
+    productIds: string[],
+    tx: any,
+  ) {
+    // Para cada produto, verificar se ainda há estoque disponível em outras transações
+    for (const productId of productIds) {
+      const remainingStock = await this.repository.getTotalStockByProductId(productId, tx);
+      
+      // Se não há mais estoque disponível, marcar como indisponível no catalog
+      if (remainingStock === 0) {
+        await this.catalogService.updateProductsAvailability([productId], false, tx);
+      }
+      // Se ainda há estoque, manter como disponível (não fazer nada)
+    }
   }
 }

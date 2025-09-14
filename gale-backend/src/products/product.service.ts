@@ -7,22 +7,31 @@ import { ProductRepository } from './product.repository';
 import { Prisma, Product } from '@prisma/client';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { CreateProductDto } from './dto/create-product.dto';
-import { CatalogService } from 'src/catalog/catalog.service';
+import { CatalogService } from '../catalog/catalog.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     private readonly repository: ProductRepository,
-    private readonly catalogService: CatalogService
+    private readonly catalogService: CatalogService,
   ) {}
 
-  async create(data: CreateProductDto & { consumerPrice: Prisma.Decimal }): Promise<Product> {
+  async create(data: CreateProductDto): Promise<Product> {
     return this.repository.runInTransaction(async (tx) => {
-      const {consumerPrice, ...productData} = data;
-      const product = await this.repository.create(productData,tx);
-      await this.catalogService.createCatalogForProduct(product.id, consumerPrice, tx);
-      return product
-    })
+      const { consumerPrice, ...productData } = data;
+      const product = await this.repository.create(productData, tx);
+
+      // Só criar catalog se consumerPrice foi fornecido
+      if (consumerPrice) {
+        await this.catalogService.createCatalogForProduct(
+          product.id,
+          consumerPrice,
+          tx,
+        );
+      }
+
+      return product;
+    });
   }
 
   async findAll(): Promise<Product[]> {

@@ -1,14 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Product, Prisma } from '@prisma/client';
+import { generatePrefixedId } from '../utils/generate-prefix-id';
 
 @Injectable()
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: Prisma.ProductCreateInput, tx?: Prisma.TransactionClient): Promise<Product> {
+  async create(
+    data: Omit<Prisma.ProductCreateInput, 'id'>,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Product> {
     const client = tx ?? this.prisma;
-    return client.product.create({ data });
+    return client.product.create({
+      data: {
+        id: generatePrefixedId('P', 5),
+        ...data,
+      },
+    });
   }
 
   async findAll(): Promise<Product[]> {
@@ -23,7 +32,9 @@ export class ProductRepository {
     return this.prisma.product.delete({ where: { id } });
   }
 
-  async runInTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  async runInTransaction<T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
     return this.prisma.$transaction(callback);
   }
 }

@@ -3,9 +3,11 @@ import { Skeleton } from "@/_components/ui/skeleton";
 import { useProducts } from "@/_store/products/ProductContext";
 import ProductCard from "./_components/ProductCard";
 import { useEffect, useState } from "react";
-import Filter from "./_components/filter";
-import NewProduct from "./_components/newProduct";
+import Filter from "../../../_components/filter";
+import NewProduct from "../../_components/newProduct";
 import { deleteProduct } from "@/api/product";
+import { translateCategory } from "@/_constants";
+
 const ProductsTab = () => {
   const { products, loading, error, refresh, removeProduct } = useProducts();
   const [filteredProducts, setFilteredProducts] = useState(products ?? []);
@@ -24,7 +26,15 @@ const ProductsTab = () => {
       </div>
 
       {/* Search */}
-      <Filter onFilter={setFilteredProducts} />
+      <Filter
+        data={products || []}
+        onFilter={setFilteredProducts}
+        searchField="name"
+        categoryField="category"
+        searchPlaceholder="Buscar por nome..."
+        categoryTranslator={translateCategory}
+        categoryPlaceholder="Todas as categorias"
+      />
 
       {/* Content */}
       <div className="flex min-h-0 flex-1 flex-col">
@@ -46,13 +56,17 @@ const ProductsTab = () => {
           </div>
         )}
         {/* Lista de Produtos */}
-        <div className="min-h-0 flex-1 ">
-          <div className="grid max-h-[72vh] gap-3 pb-3 overflow-y-auto pr-2 md:grid-cols-4">
+        <div className="min-h-0 flex-1">
+          <div className="grid max-h-[72vh] gap-3 overflow-y-auto pb-3 pr-2 md:grid-cols-4">
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} onDelete = {async (id) => {
-                await deleteProduct(id);
-                removeProduct(id);
-              }} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                onDelete={async (id) => {
+                  await deleteProduct(id);
+                  removeProduct(id);
+                }}
+              />
             ))}
           </div>
         </div>

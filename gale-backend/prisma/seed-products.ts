@@ -7,7 +7,7 @@ import { ProductService } from '../src/products/product.service';
 async function seedProduct() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const productService = app.get(ProductService);
-
+  // npm run seed:products
   const products = [
     {
       name: 'Água com gás 500ml',
@@ -15,7 +15,6 @@ async function seedProduct() {
         'Água gaseificada refrescante e ideal para acompanhar refeições ou drinks.',
       category: Category.NonAlcoholic,
       pack: 12,
-      // tags: ['Água', 'Sem açúcar', 'gás'],
       sizeType: SizeType.ml,
       size: '500',
       imgUrl:
@@ -577,13 +576,28 @@ async function seedProduct() {
   ];
 
   for (const rawProduct of products) {
-    const productDto: CreateProductDto & { consumerPrice: Prisma.Decimal } = {
-      ...rawProduct,
+    const productDto: CreateProductDto = {
+      name: rawProduct.name,
+      description: rawProduct.description,
+      category: rawProduct.category,
+      pack: rawProduct.pack,
+      sizeType: rawProduct.sizeType,
+      size: rawProduct.size,
+      imgUrl: rawProduct.imgUrl,
       consumerPrice: new Prisma.Decimal(rawProduct.consumerPrice),
     };
-    await productService.create(productDto);
 
-    console.log(`✅ Produto criado: ${rawProduct.name}`);
+    try {
+      const createdProduct = await productService.create(productDto);
+      console.log(
+        `✅ Produto criado: ${createdProduct.name} (ID: ${createdProduct.id})`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ Erro ao criar produto ${rawProduct.name}:`,
+        error.message || error,
+      );
+    }
   }
   await app.close();
   console.log('Seed de produtos concluído com sucesso!');

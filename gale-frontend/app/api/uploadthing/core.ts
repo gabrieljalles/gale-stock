@@ -12,7 +12,17 @@ export const ourFileRouter = {
       maxFileCount: 1,
     },
   })
-    .onUploadComplete(async ({file}) => {
+    .middleware(async ({ files }) => {
+      const file = files[0];
+      if (!file) {
+        throw new UploadThingError({
+          code: "BAD_REQUEST",
+          message: `Nenhum arquivo enviado.`,
+        });
+      }
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
       return { url: file.ufsUrl };
     }),
 } satisfies FileRouter;

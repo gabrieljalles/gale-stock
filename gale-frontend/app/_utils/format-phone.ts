@@ -1,3 +1,4 @@
+// Formata um número de telefone para o padrão (XX) XXXXX-XXXX
 export function formatPhone(value: string) {
   return (
     value

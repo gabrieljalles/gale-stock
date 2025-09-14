@@ -1,8 +1,8 @@
-// ImageUploadInput.tsx
 "use client";
 import { UploadButton } from "@/_utils/uploadthing";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { validateSquareImage } from "@/_utils/image-validation";
 
 interface ImageUploadInputProps {
   value?: string;
@@ -14,6 +14,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   onChange: propOnChange,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const {
     setValue: contextSetValue,
     watch,
@@ -32,9 +33,9 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   };
 
   return (
-    <div className="flex w-full flex-col items-center justify-between gap-2">
+    <div className="flex w-full flex-col items-center justify-between gap-1">
       {imgUrl && (
-        <div className="flex w-full items-center flex-col">
+        <div className="flex w-full flex-col items-center">
           <label className="text-xs">{fileName}</label>
           <img src={imgUrl} alt="preview" className="h-16 rounded" />
         </div>
@@ -52,19 +53,56 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
             display: "flex",
           },
         }}
+        onBeforeUploadBegin={async (files) => {
+          setIsValidating(true);
+
+          // Validar cada arquivo antes do upload
+          for (const file of files) {
+            const isSquare = await validateSquareImage(file);
+            if (!isSquare) {
+              setIsValidating(false);
+              alert(
+                `❌ A imagem "${file.name}" deve ser quadrada!\n\nEnvie uma imagem com a mesma largura e altura (ex: 512x512px)`,
+              );
+              return []; // Cancelar upload
+            }
+          }
+
+          setIsValidating(false);
+          setIsUploading(true);
+          return files; // Prosseguir com upload
+        }}
         onClientUploadComplete={(res) => {
           setIsUploading(false);
           if (res && res[0]) {
-
-            handleChange(res[0].ufsUrl);
+            handleChange(res[0].url);
             setFileName(res[0].name);
           }
         }}
         onUploadError={(error: Error) => {
           setIsUploading(false);
-          alert(`ERROR! ${error.message}`);
+          setIsValidating(false);
+          alert(`❌ ERRO! ${error.message}`);
         }}
       />
+
+      <span className="text-center text-[10px] text-gray-500">
+        📐 Sempre faça upload de imagens quadradas
+        <br />
+        <span className="text-gray-400">(mesma largura e altura)</span>
+      </span>
+
+      {isValidating && (
+        <span className="text-xs text-orange-500">
+          🔍 Verificando se a imagem é quadrada...
+        </span>
+      )}
+
+      {isUploading && (
+        <span className="text-xs text-blue-500">
+          ⬆️ Fazendo upload da imagem...
+        </span>
+      )}
 
       {errors.imgUrl && (
         <span className="text-xs text-red-500">

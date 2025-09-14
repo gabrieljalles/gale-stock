@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Product {
-  id           String              @id @default(cuid())
+  id           String              @id
   name         String @unique
   barCode      String? @unique
   description  String?
@@ -25,7 +25,7 @@ model Product {
 }
 
 model Supplier {
-  id                  String             @id @default(cuid())
+  id                  String             @id
   legalRepresentative String?
   enterprise          String
   completeAddress     String?
@@ -42,6 +42,7 @@ model StockTransaction {
   supplierId        String
   transactionType   TransactionType
   numberPayments    Int
+  nfeAccessKey      String?
   firstPaymentDate  DateTime?
   totalProductCost  Decimal @db.Decimal(10,4)
   freightCost Decimal @db.Decimal(10,4)
@@ -83,8 +84,10 @@ model StockEntryDetail {
 }
 
 model LostEntry {
+  //Adicionar quem adicionou essa perda no futuro.
   id         String     @id @default(cuid())
   productId  String
+  stockEntryDetailId String
   quantity   Int
   reasonLoss ReasonLoss
   note       String?
@@ -95,12 +98,13 @@ model LostEntry {
 
 model Catalog {
   id                      String   @id
-  consumerIfoodPrice      Decimal? @db.Decimal(10,4)
-  consumerNightPrice      Decimal? @db.Decimal(10,4)
-  consumerPrice           Decimal? @db.Decimal(10,4)
-  liquidationPrice        Decimal? @db.Decimal(10,4)
-  discountPackPrice       Decimal? @db.Decimal(10,4)
-  isLiquidation           Boolean  @default(false)
+  consumerIfoodPrice      Decimal? @db.Decimal(10,4) // Preço de mercado /0,80
+  consumerNightPrice      Decimal? @db.Decimal(10,4) // Preço de mercado /0,95
+  consumerPrice           Decimal? @db.Decimal(10,4) // Preço de mercado
+  discountPackPrice       Decimal? @db.Decimal(10,4) // (Preço de mercado - liquidation price)*0,6 + liquidation price
+  liquidationPrice        Decimal? @db.Decimal(10,4) //Custo de aquisição (TAXA + FRETE) dividido por 0,87
+  isLiquidation           Boolean  @default(false) 
+
   packageDiscountAmount   Int? 
   available               Boolean  @default(false)
 
@@ -112,7 +116,7 @@ model Catalog {
   orderDetails OrderDetail[]
 }
 
-model DiscountCatalog { 
+model DiscountCatalog {
   id String @id @default(cuid())
   productId String
   initialDate DateTime 
@@ -120,7 +124,7 @@ model DiscountCatalog {
   catalog Catalog @relation(fields:[productId], references: [id])
 }
 
-model Order { 
+model Order {
   id String @id @default(cuid())
   deliveryType DeliveryType @default(InStore)
   orderSource OrderSource?
@@ -178,7 +182,7 @@ model OrderAddress{
 }
 
 model User{
-  id String @id @default(cuid())
+  id String @id 
   fullName String
   cellPhone String
   dateOfBirth DateTime
@@ -211,18 +215,6 @@ model UserAddress{
   updatedAt DateTime @updatedAt
   user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-//Não vi a necessidade de atribuir a venda ao estoque retirado. Se a empresa se tornar distribuidora, farei isso.
-// model StockMovement {
-//   id String @id @default(cuid())
-//   stockEntryDetailId String
-//   orderDetailId String
-//   quantityMoved Int
-//   movedAt DateTime @default(now())
-
-//   stockEntryDetail StockEntryDetail @relation(fields: [stockEntryDetailId], references: [id], onDelete: Cascade)
-//   orderDetail OrderDetail @relation(fields: [orderDetailId], references: [id], onDelete: Cascade)
-// }
 
 enum TypeAddress {
   Street
@@ -293,10 +285,8 @@ enum SizeType {
 
 enum ReasonLoss {
   Theft
-  DamegedProduct
-  CustomerReturn
+  DamagedProduct
   Expiration
-  Operacional
   Loss
 }
 

@@ -1,7 +1,7 @@
-import { IsDateString, IsOptional } from "class-validator";
+import { IsDateString, IsOptional } from 'class-validator';
 
-export class UpdateInstallmentDto{
-    @IsOptional()
-    @IsDateString()
-    paidDate?: string;
+export class UpdateInstallmentDto {
+  @IsOptional()
+  @IsDateString()
+  paidDate?: string | null;
 }

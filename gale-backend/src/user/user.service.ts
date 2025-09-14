@@ -148,7 +148,7 @@ export class UserService {
 
     if (user.accountType !== AccountType.DeliveryMan) {
       throw new BadRequestException(
-        `O usuário escolhido para ser motoboy, não é do tipo Motoboy.`,
+        `O usuário escolhido para ser motoboy não é do tipo Motoboy.`,
       );
     }
     return user;

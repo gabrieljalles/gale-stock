@@ -23,6 +23,52 @@ export class StockTransactionRepository {
     return client.stockTransactionInstallment.findUnique({ where: { id } });
   }
 
+  async findAllTransactions() {
+    return this.prisma.stockTransaction.findMany({
+      include: {
+        supplier: true,
+        stockEntryDetails: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 50,
+    });
+  }
+
+  async findAllInstallments() {
+    // Primeiro, buscar os IDs das últimas 50 transações
+    const latestTransactionIds = await this.prisma.stockTransaction.findMany({
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    // Depois, buscar os installments dessas transações
+    return this.prisma.stockTransactionInstallment.findMany({
+      where: {
+        stockTransactionId: {
+          in: latestTransactionIds.map((t) => t.id),
+        },
+      },
+      orderBy: {
+        dueDate: 'asc',
+      },
+    });
+  }
+
+  async findAllStockEntryDetails() {
+    return this.prisma.stockEntryDetail.findMany({
+      include: {
+        product: true,
+      },
+    });
+  }
+
   async findAllInstallmentsByTransaction(
     transactionId: string,
     tx?: Prisma.TransactionClient,
@@ -31,6 +77,7 @@ export class StockTransactionRepository {
 
     return client.stockTransactionInstallment.findMany({
       where: { stockTransactionId: transactionId },
+      orderBy: { installmentNumber: 'asc' },
     });
   }
 
@@ -95,7 +142,7 @@ export class StockTransactionRepository {
 
   async updateInstallment(
     id: string,
-    data: Partial<{ paidDate: Date }>,
+    data: Partial<{ paidDate: Date | null }>,
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx ?? this.prisma;
@@ -110,5 +157,24 @@ export class StockTransactionRepository {
     return client.stockTransaction.delete({
       where: { id },
     });
+  }
+
+  async getTotalStockByProductId(
+    productId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    
+    const result = await client.stockEntryDetail.aggregate({
+      where: {
+        productId,
+        quantityOnStock: { gt: 0 },
+      },
+      _sum: {
+        quantityOnStock: true,
+      },
+    });
+
+    return result._sum.quantityOnStock || 0;
   }
 }

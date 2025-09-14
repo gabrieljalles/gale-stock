@@ -25,9 +25,5 @@ export default function AdminLayout({
 
   if (isLoading) return <LogoComponent />;
 
-  return (
-  <SupplierProvider>
-    {children}
-  </SupplierProvider>
-    )
+  return <SupplierProvider>{children}</SupplierProvider>;
 }

@@ -19,6 +19,10 @@ export class CreateStockTransactionDto {
   @IsEnum(TransactionType)
   transactionType: TransactionType;
 
+  @IsOptional()
+  @IsString()
+  nfeAccessKey?: string;
+
   @IsNumber()
   numberPayments: number;
 

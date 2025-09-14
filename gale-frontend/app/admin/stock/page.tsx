@@ -4,7 +4,7 @@ import CurrentStockTab from "./_tabs/current/";
 import HistoryStockTab from "./_tabs/history/";
 import ProductsTab from "./_tabs/products/";
 import { useState } from "react";
-import TabButton from "./_components/TabButton";
+import TabButton from "../_components/TabButton";
 const tabs = [
   {
     label: "Em estoque",
@@ -46,7 +46,7 @@ const StockPage = () => {
           ))}
         </nav>
 
-        <div className="flex h-full w-full rounded-md p-3">
+        <div className="flex w-full rounded-md p-3">
           {currentTab?.component}
         </div>
       </div>

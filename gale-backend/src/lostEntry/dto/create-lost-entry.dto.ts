@@ -6,20 +6,24 @@ import {
   IsEnum,
   MinLength,
   IsInt,
+  IsDateString,
 } from 'class-validator';
 
 export class CreateLostEntryDto {
+  @IsString()
+  productId: string;
 
-    @IsEnum(ReasonLoss)
-    reasonLoss: ReasonLoss;
+  @IsOptional()
+  @IsDateString()
+  validityDate?: string;
 
-    @IsInt()
-    quantity: number;
+  @IsInt()
+  quantity: number;
 
-    @IsOptional()
-    @IsString()
-    note: string;
+  @IsEnum(ReasonLoss)
+  reasonLoss: ReasonLoss;
 
-    @IsString()
-    productId: string;
+  @IsOptional()
+  @IsString()
+  note?: string;
 }

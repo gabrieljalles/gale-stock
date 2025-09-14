@@ -12,11 +12,11 @@ const utapi = new UTApi();
 export async function DELETE(req: NextRequest) {
   try {
     const { fileKey } = await req.json();
-    
+
     if (!fileKey) {
       return NextResponse.json(
         { error: "fileKey is required in request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -27,7 +27,7 @@ export async function DELETE(req: NextRequest) {
     console.error("Error deleting uploadthing file:", error);
     return NextResponse.json(
       { error: "Failed to delete file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

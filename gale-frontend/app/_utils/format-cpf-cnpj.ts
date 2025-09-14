@@ -1,3 +1,4 @@
+//Formata CPF e CNPJ
 export function formatCpfCNPJ(value: string) {
   const digits = value.replace(/\D/g, "");
 
