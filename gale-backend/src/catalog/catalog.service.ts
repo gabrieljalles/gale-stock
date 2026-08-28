@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CatalogRepository } from './catalog.repository';
 import { Prisma } from '@prisma/client';
 import { UpdateCatalogDto } from './dto/update-catalog.dto';
+import { SettingsService } from 'src/settings/settings.service';
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly repository: CatalogRepository) {}
+  constructor(
+    private readonly repository: CatalogRepository,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   async findProductById(productId: string, tx?: Prisma.TransactionClient) {
     return await this.repository.findById(productId, tx);
@@ -24,15 +28,20 @@ export class CatalogService {
     tx?: Prisma.TransactionClient,
   ) {
     // Se consumerPrice foi fornecido, calcular os preços derivados
+    // a partir das % configuradas em Configurações.
     let consumerNightPrice: Prisma.Decimal | undefined;
     let consumerIfoodPrice: Prisma.Decimal | undefined;
 
     if (consumerPrice) {
-      // consumerNightPrice = consumerPrice / 0.95
-      consumerNightPrice = new Prisma.Decimal(consumerPrice).div(0.9);
+      const { nightPriceDivisor, ifoodPriceDivisor } =
+        await this.settingsService.getPriceDivisors();
 
-      // consumerIfoodPrice = consumerPrice / 0.8
-      consumerIfoodPrice = new Prisma.Decimal(consumerPrice).div(0.8);
+      consumerNightPrice = new Prisma.Decimal(consumerPrice).div(
+        nightPriceDivisor,
+      );
+      consumerIfoodPrice = new Prisma.Decimal(consumerPrice).div(
+        ifoodPriceDivisor,
+      );
     }
 
     return await this.repository.create(
@@ -44,9 +53,31 @@ export class CatalogService {
     );
   }
 
-  //Precisa criar um multiplicador para nightPrice
-  async updateCatalog(id: string, data: UpdateCatalogDto) {
+  async updateCatalog(id: string, dto: UpdateCatalogDto) {
+    const data: UpdateCatalogDto = { ...dto };
+
+    // Se o preço normal mudou, recalcular noturno/iFood automaticamente
+    // (a partir das % configuradas em Configurações), a menos que um valor
+    // específico para eles também tenha sido informado nesta mesma edição.
+    if (dto.consumerPrice !== undefined) {
+      if (dto.consumerNightPrice === undefined || dto.consumerIfoodPrice === undefined) {
+        const { nightPriceDivisor, ifoodPriceDivisor } =
+          await this.settingsService.getPriceDivisors();
+
+        if (dto.consumerNightPrice === undefined) {
+          data.consumerNightPrice = dto.consumerPrice / nightPriceDivisor;
+        }
+        if (dto.consumerIfoodPrice === undefined) {
+          data.consumerIfoodPrice = dto.consumerPrice / ifoodPriceDivisor;
+        }
+      }
+    }
+
     return await this.repository.update(id, data);
+  }
+
+  async findAllWithProductsAndStock() {
+    return await this.repository.findAllWithProductsAndStock();
   }
 
   async updateProductsAvailability(
@@ -54,6 +85,10 @@ export class CatalogService {
     available: boolean,
     tx?: Prisma.TransactionClient,
   ) {
-    return await this.repository.updateManyAvailability(productIds, available, tx);
+    return await this.repository.updateManyAvailability(
+      productIds,
+      available,
+      tx,
+    );
   }
 }

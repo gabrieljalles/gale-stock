@@ -1,0 +1,1 @@
+ALTER TABLE "Catalog" ADD COLUMN "wholesaleEnabled" BOOLEAN NOT NULL DEFAULT true;

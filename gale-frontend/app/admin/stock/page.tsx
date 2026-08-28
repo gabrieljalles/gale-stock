@@ -5,6 +5,7 @@ import HistoryStockTab from "./_tabs/history/";
 import ProductsTab from "./_tabs/products/";
 import { useState } from "react";
 import TabButton from "../_components/TabButton";
+import SuppliersStockTab from "./_tabs/suppliers";
 const tabs = [
   {
     label: "Em estoque",
@@ -21,6 +22,11 @@ const tabs = [
     value: "products",
     component: <ProductsTab />,
   },
+  {
+    label: "Fornecedores",
+    value: "suppliers",
+    component: <SuppliersStockTab />,
+  },
 ];
 
 const StockPage = () => {
@@ -28,13 +34,13 @@ const StockPage = () => {
   const currentTab = tabs.find((tab) => tab.value === activeTab);
 
   return (
-    <div className="flex h-screen w-full gap-1 p-1">
+    <div className="flex h-screen w-full gap-1 overflow-hidden p-1">
       <SideBar />
 
       {/* Content */}
-      <div className="flex-1 rounded-md border border-black bg-white p-1">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-md border border-black bg-white p-1">
         {/* Navigation */}
-        <nav className="flex border-b">
+        <nav className="flex flex-shrink-0 overflow-x-auto border-b">
           {tabs.map((tab) => (
             <TabButton
               key={tab.value}
@@ -46,7 +52,7 @@ const StockPage = () => {
           ))}
         </nav>
 
-        <div className="flex w-full rounded-md p-3">
+        <div className="w-full flex-1 overflow-hidden rounded-md bg-gray-50 p-3">
           {currentTab?.component}
         </div>
       </div>

@@ -20,11 +20,13 @@ import {
   CreditCard,
   Handshake,
   Package,
+  Pencil,
   StickyNote,
   Trash2,
 } from "lucide-react";
 import { Fragment, useMemo, useState, useEffect } from "react";
 import { DeleteTransactionDialog } from "./DeleteTransactionDialog";
+import { EditStockEntryDialog } from "./EditStockEntryDialog";
 
 const StockTransactionsTable = () => {
   const getTransactionTypeIcon = (transactionType: string) => {
@@ -69,6 +71,7 @@ const StockTransactionsTable = () => {
     getTransactionInstallments,
     updateInstallmentPaidDate,
     deleteStockTransaction,
+    refresh,
   } = useStockTransactions();
   const { suppliers } = useSuppliers();
   const [expandedTransaction, setExpandedTransaction] = useState<string | null>(
@@ -82,6 +85,13 @@ const StockTransactionsTable = () => {
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [entryToEdit, setEntryToEdit] = useState<{
+    id: string;
+    productName: string;
+    quantityOnStock: number;
+    validityDate: string | null;
+  } | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const enrichedTransactions = useMemo(() => {
     if (!stockTransactions || !suppliers) return [];
@@ -179,32 +189,37 @@ const StockTransactionsTable = () => {
     return <div className="p-4 text-red-500"> Erro: {error.message}</div>;
 
   return (
-    <div className="w-full space-y-4">
-      <div>
-        <div className="Pb-2 max-h-[530px] overflow-y-auto rounded-md border">
-          <Table>
-            <TableHeader>
+    <div className="flex h-full w-full flex-col space-y-1">
+      <div className="relative flex-1 w-full overflow-y-auto rounded-md border bg-white pb-2">
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-white">
+            <TableRow>
+              <TableHead>Fornecedor</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Dt compra</TableHead>
+              <TableHead>Parcelas</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Info</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {enrichedTransactions.length === 0 ? (
               <TableRow>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Dt compra</TableHead>
-                <TableHead>Parcelas</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Info</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableCell
+                  colSpan={8}
+                  className="h-24 text-center text-gray-500"
+                >
+                  Nenhum estoque encontrados
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {enrichedTransactions?.map((transaction) => (
+            ) : (
+              enrichedTransactions?.map((transaction) => (
                 <Fragment key={transaction.id}>
                   {/* Linha principal da transação */}
                   <TableRow key={transaction.id}>
                     <TableCell>{transaction.supplierName || ""}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {transaction.id.substring(0, 10)}...
-                    </TableCell>
 
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -265,7 +280,7 @@ const StockTransactionsTable = () => {
                   {/* Linha expandida com parcelas */}
                   {expandedTransaction === transaction.id && (
                     <TableRow>
-                      <TableCell colSpan={9} className="p-0">
+                      <TableCell colSpan={8} className="p-0">
                         <div className="border-t bg-gray-50">
                           <div className="space-y-6 p-4">
                             {/* Seção de Parcelas */}
@@ -379,7 +394,8 @@ const StockTransactionsTable = () => {
                                           {/* Informações do produto */}
                                           <div className="flex-1">
                                             <div className="font-medium text-gray-900">
-                                              {product.product?.name ||
+                                              {product.productName ||
+                                                product.product?.name ||
                                                 "Produto não encontrado"}
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -450,6 +466,12 @@ const StockTransactionsTable = () => {
                                             </div>
                                             <div>{product.initialQuantity}</div>
                                           </div>
+                                          <div className="flex flex-col items-center justify-center">
+                                            <div className="text-sm text-gray-600">
+                                              Qtd em estoque
+                                            </div>
+                                            <div>{product.quantityOnStock}</div>
+                                          </div>
                                           <div>
                                             <div className="text-sm text-gray-600">
                                               Custo Total
@@ -461,6 +483,26 @@ const StockTransactionsTable = () => {
                                               ).toFixed(2)}
                                             </div>
                                           </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              setEntryToEdit({
+                                                id: product.id,
+                                                productName:
+                                                  product.product?.name ||
+                                                  "Produto",
+                                                quantityOnStock:
+                                                  product.quantityOnStock,
+                                                validityDate:
+                                                  product.validityDate,
+                                              });
+                                              setEditDialogOpen(true);
+                                            }}
+                                            className="flex items-center gap-1"
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
                                         </div>
                                       </div>
                                     ),
@@ -479,14 +521,14 @@ const StockTransactionsTable = () => {
                     </TableRow>
                   )}
                 </Fragment>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Controles de Paginação - Pequenos no canto direito */}
-      <div className="flex justify-end">
+      <div className="flex justify-end flex-shrink-0">
         <div className="flex items-center gap-1 text-sm">
           <span className="mr-2 text-gray-600">
             {currentPage} de {totalPages}
@@ -519,6 +561,14 @@ const StockTransactionsTable = () => {
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
         transactionId={transactionToDelete || ""}
+      />
+
+      {/* Dialog de correção de lote de estoque */}
+      <EditStockEntryDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        entry={entryToEdit}
+        onUpdated={refresh}
       />
     </div>
   );

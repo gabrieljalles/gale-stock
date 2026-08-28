@@ -13,6 +13,7 @@ import {
 import { StockTransactionService } from './stock-transaction.service';
 import { CreateStockTransactionDto } from './dto/create-transaction.dto';
 import { UpdateInstallmentDto } from './dto/update-transaction.dto';
+import { UpdateStockEntryDetailDto } from './dto/update-stock-entry-detail.dto';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Roles } from 'src/auth/roles.decorator';
@@ -87,6 +88,37 @@ export class StockTransactionController {
   @Roles('Admin', 'Shopper')
   async getInstallments(@Param('id') id: string) {
     return await this.stockTransactionService.getInstallmentsByTransaction(id);
+  }
+
+  @Patch('/entry-detail/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async updateStockEntryDetail(
+    @Param('id') id: string,
+    @Body() dto: UpdateStockEntryDetailDto,
+  ) {
+    try {
+      const result = await this.stockTransactionService.updateStockEntryDetail(
+        id,
+        dto,
+      );
+      return {
+        message: 'Entrada de estoque atualizada com sucesso',
+        entry: result,
+      };
+    } catch (error) {
+      console.error('Error updating stock entry detail:', error);
+      throw error instanceof HttpException
+        ? error
+        : new HttpException(
+            {
+              statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+              message: 'Erro ao atualizar entrada de estoque',
+              details: error.message || error,
+            },
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+    }
   }
 
   @Patch('/installment/:id')

@@ -1,0 +1,1 @@
+ALTER TABLE "SiteSettings" ADD COLUMN "storeOpen" BOOLEAN NOT NULL DEFAULT true;

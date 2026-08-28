@@ -575,9 +575,12 @@ async function seedProduct() {
     },
   ];
 
-  for (const rawProduct of products) {
+  for (const [index, rawProduct] of products.entries()) {
     const productDto: CreateProductDto = {
       name: rawProduct.name,
+      // Seed não tem código de barras real; gera um placeholder só para
+      // satisfazer o campo obrigatório e a unicidade no banco.
+      barCode: `SEED-${index.toString().padStart(4, '0')}`,
       description: rawProduct.description,
       category: rawProduct.category,
       pack: rawProduct.pack,

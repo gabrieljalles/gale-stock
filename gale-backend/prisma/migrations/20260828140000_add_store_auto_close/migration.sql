@@ -1,0 +1,2 @@
+ALTER TABLE "SiteSettings" ADD COLUMN "autoCloseEnabled" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "SiteSettings" ADD COLUMN "storeCloseHour" INTEGER NOT NULL DEFAULT 22;

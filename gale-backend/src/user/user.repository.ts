@@ -54,6 +54,17 @@ export class UserRepository {
     return this.prisma.user.findUnique({ where: { id: userId } });
   }
 
+  async findManyClients(onlyAuthorizedForBill: boolean) {
+    return this.prisma.user.findMany({
+      where: {
+        accountType: 'Client',
+        ...(onlyAuthorizedForBill && { canPayOnTheBill: true }),
+      },
+      select: { id: true, fullName: true, canPayOnTheBill: true },
+      orderBy: { fullName: 'asc' },
+    });
+  }
+
   async findUserAddress(addressId: string) {
     return this.prisma.userAddress.findUnique({ where: { id: addressId } });
   }

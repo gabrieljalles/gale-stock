@@ -7,6 +7,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStockTransactionDto } from './dto/create-transaction.dto';
 import { StockTransactionRepository } from './stock-transaction.repository';
 import { UpdateInstallmentDto } from './dto/update-transaction.dto';
+import { UpdateStockEntryDetailDto } from './dto/update-stock-entry-detail.dto';
 import { CatalogService } from 'src/catalog/catalog.service';
 import { getLandedUnitCost } from '../../utils/landed-unit-cost.utils';
 
@@ -113,25 +114,48 @@ export class StockTransactionService {
             0,
           );
 
+          const productIds = stockEntryDetail.map((p) => p.productId);
+          const products = await this.repository.findProductNamesByIds(
+            productIds,
+            tx,
+          );
+          const productNameById = new Map(
+            products.map((p) => [p.id, p.name]),
+          );
+
           await this.repository.createStockEntryDetails(
-            stockEntryDetail.map((p) => ({
-              stockTransactionId: transaction.id,
-              productId: p.productId,
-              baseUnitCost: p.baseUnitCost,
-              initialQuantity: p.initialQuantity,
-              quantityOnStock: p.initialQuantity,
-              validityDate: new Date(p.validityDate),
-              totalProductCost: p.totalProductCost,
-              landedUnitCost: getLandedUnitCost(p, {
-                ...dto,
-              }),
-            })),
+            stockEntryDetail.map((p) => {
+              const productName = productNameById.get(p.productId);
+
+              if (!productName) {
+                throw new NotFoundException(
+                  `Produto ${p.productId} não encontrado`,
+                );
+              }
+
+              return {
+                stockTransactionId: transaction.id,
+                productId: p.productId,
+                productName,
+                baseUnitCost: p.baseUnitCost,
+                initialQuantity: p.initialQuantity,
+                quantityOnStock: p.initialQuantity,
+                validityDate: new Date(p.validityDate),
+                totalProductCost: p.totalProductCost,
+                landedUnitCost: getLandedUnitCost(p, {
+                  ...dto,
+                }),
+              };
+            }),
             tx,
           );
 
           // Atualizar catalog para marcar produtos como disponíveis
-          const productIds = stockEntryDetail.map((p) => p.productId);
-          await this.catalogService.updateProductsAvailability(productIds, true, tx);
+          await this.catalogService.updateProductsAvailability(
+            productIds,
+            true,
+            tx,
+          );
         }
         console.log('✅ Products inserted');
       } catch (err) {
@@ -151,11 +175,24 @@ export class StockTransactionService {
       }
 
       // Buscar todos os produtos da transação que será deletada
-      const stockEntryDetails = await this.repository.findAllEntryDetailsByTransaction(id, tx);
-      const productIds = stockEntryDetails.map(detail => detail.productId);
+      const stockEntryDetails =
+        await this.repository.findAllEntryDetailsByTransaction(id, tx);
+      const productIds = stockEntryDetails.map((detail) => detail.productId);
+      const stockEntryDetailIds = stockEntryDetails.map((detail) => detail.id);
+
+      // Excluir todas as perdas relacionadas aos stockEntryDetails da transação
+      if (stockEntryDetailIds.length > 0) {
+        await this.repository.deleteLostEntriesByStockEntryDetailIds(
+          stockEntryDetailIds,
+          tx,
+        );
+      }
 
       // Deletar a transação (isso deletará automaticamente os stockEntryDetails devido ao onDelete: Cascade)
-      const deletedTransaction = await this.repository.deleteTransaction(id, tx);
+      const deletedTransaction = await this.repository.deleteTransaction(
+        id,
+        tx,
+      );
 
       // Verificar se ainda há estoque disponível para cada produto após a exclusão
       if (productIds.length > 0) {
@@ -259,17 +296,61 @@ export class StockTransactionService {
     });
   }
 
+  // Corrige uma entrada de estoque (erro de digitação ou ajuste por contagem física)
+  async updateStockEntryDetail(id: string, dto: UpdateStockEntryDetailDto) {
+    return this.repository.runInTransaction(async (tx) => {
+      const entry = await this.repository.findStockEntryDetailById(id, tx);
+
+      if (!entry) {
+        throw new NotFoundException('Entrada de estoque não encontrada');
+      }
+
+      const updated = await this.repository.updateStockEntryDetail(
+        id,
+        {
+          ...(dto.quantityOnStock !== undefined && {
+            quantityOnStock: dto.quantityOnStock,
+          }),
+          ...(dto.validityDate !== undefined && {
+            validityDate: new Date(dto.validityDate),
+          }),
+        },
+        tx,
+      );
+
+      const totalStock = await this.repository.getTotalStockByProductId(
+        entry.productId,
+        tx,
+      );
+
+      await this.catalogService.updateProductsAvailability(
+        [entry.productId],
+        totalStock > 0,
+        tx,
+      );
+
+      return updated;
+    });
+  }
+
   private async updateCatalogAvailabilityAfterDeletion(
     productIds: string[],
     tx: any,
   ) {
     // Para cada produto, verificar se ainda há estoque disponível em outras transações
     for (const productId of productIds) {
-      const remainingStock = await this.repository.getTotalStockByProductId(productId, tx);
-      
+      const remainingStock = await this.repository.getTotalStockByProductId(
+        productId,
+        tx,
+      );
+
       // Se não há mais estoque disponível, marcar como indisponível no catalog
       if (remainingStock === 0) {
-        await this.catalogService.updateProductsAvailability([productId], false, tx);
+        await this.catalogService.updateProductsAvailability(
+          [productId],
+          false,
+          tx,
+        );
       }
       // Se ainda há estoque, manter como disponível (não fazer nada)
     }

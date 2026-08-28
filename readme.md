@@ -1,59 +1,48 @@
 Perguntas para o cliente (LEO)
-[] - Perguntar para o Leo se o turno da noite pode ser um desconto inferior ao turno da manhã se o cliente atinge a quantidade Mínima de produtos para ter promoção.
+
 [] - Falar para o Leo sobre consumo anterior ao pagamento, precisa estar atrelado a um cliente.
 [] - Explicar o Pack (na hora de criar um novo produto)
 
-Receita bruta (RB) -> Valor que o cliente pagou.
 Receita líquida (RL) = (RB) - Imposto (0,04\*FB (Valor alterável))
 
 Lucro bruto -> A subtração do Faturamento Líquido pelo Custo de produção
 
-# CONFIGURAÇÕES DO SISTEMA
+### DRE
 
-- 🚚 Frete de entrega
--
+- = Receita bruta (RB) -> Valor que o cliente pagou.
+- (-) Deduções de vendas (taxas de apps, maquininha, devoluções, descontos)
+- (=) Receita líquida de vendas -> O real dinheiro que entra no caixa.
 
-# DOCUMENTAÇÃO
+##### Custos variáveis
 
-### Regras de negócio:
+- (-) Custo de mercadoria vendida (CMV)
+- (-) Perdas com estoque (quebras, furtos, vencimentos)
+- (=) Lucro bruto
 
-##### Produtos (Product):
+##### Despesas operacionais
 
-- Criar produtos:
-  - Somente administradores podem criar produtos.
-- Apagar produtos:
-  - Somente administradores podem apagar produtos.
-- Editar produtos:
-  - Somente administradores podem editar produtos.
+- (-) Despesas com entregadores (fixo - variáveis)
+- (-) Marketing digital (anúncios, promoções)
+- (-) Aluguel
+- (-) Energia, água e internet
+- (-) Despesas administrativas (sistema, contador, taxas bancárias)
+- (=) Resultado Operacional
 
-##### User (User):
+##### Despesas financeiros
 
-- Fluxo de registro do usuário:
+- (-) Juros de Empréstimos (apenas juros)
+- (=) Resultado antes do IR/CSLL
 
-  1. Usuário se registra.
-  2. E-mail enviado para confirmação de e-mail
-  3. Usuário valida e-mail.
+##### Tributação sobre o lucro
 
-- Fluxo de login do usuário:
-  1. Usuário efetua login.
+- (-) IRPJ + CSLL
+- = Lucro Líquido do exercício
 
-##### Stock (Estoque):
+# ⚙️ PARAMETROS DO SISTEMA
 
-- (Método de estoque) Foi adotado o COGS para cada venda aliado ao método FIFO.
-
-  - Fácil rastreabilidade
-  - Acompanhamento de validade dos produtos.
-  - Margem precisa.
-
-- (Rateio de frete e taxas) Eu tinha duas opções para realizar os rateios do frete:
-  1. Rateio por quantidade:
-     - Dividir os custos da operação entre o quantitativo de produtos.
-  2. Rateio por valor:
-     - Dividir os custos da operação entre o valor pago por produto.
-
-### API - DOCS:
-
-[ ] - Usar o @nestjs/swagger swagger-ui-express para imprimir a documentação da API.
+- 🚚 Frete de entrega (6 reais)
+- 🌜 Preço noturno (0.9) -> Não programado.
+- 🛍️ Preço Ifood = (0.7) \* Preço de liquidação.
 
 # BACK-END
 
@@ -65,6 +54,13 @@ credentials: true,
 });
 
 Objetivos:
+
+- [] Criar um produto
+- [] Criar um fornecedor
+- [] Criar um estoque
+- [] Criar uma perda
+- [] Criar um cliente
+- [] Criar uma venda
 
 [ ] - Criei uma coluna de isPrimary para userAddress para que ele diga qual o seu endereço principal. (Ainda não programado no backend, nem mesmo o repository).
 [ ] - Preciso arrumar uma forma de colocar os dados de (Quantidade mínima para produtos com giro pequeno), caso contrário, produtos com pouco giro não conseguem se adequar a metodologia da média ponderada.
@@ -104,4 +100,3 @@ Finalizar pedido.
 # E-MAIL VERIFICATION:
 
 [ ] Alterar os links do corpo do e-mail -> instagram | Políticas de privacidade | Termos de uso |
-[ ] Criar uma versão dark e uma light do e-mail para experiência do usuário, atualmente, estamos somente com a versão light. em dispositivos night, experiência não tão boa.

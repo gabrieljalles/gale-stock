@@ -10,7 +10,7 @@ const TabButton = ({ isActive, onClick, children }: TabButtonProps) => {
   return (
     <Button
       onClick={onClick}
-      className={`relative rounded-t-md bg-transparent px-4 py-0 font-medium ${
+      className={`relative flex-shrink-0 whitespace-nowrap rounded-t-md bg-transparent px-3 py-0 font-medium sm:px-4 ${
         isActive ? "" : "text-gray-500 hover:text-primary"
       }`}
     >

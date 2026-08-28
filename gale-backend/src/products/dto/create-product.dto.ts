@@ -15,6 +15,10 @@ export class CreateProductDto {
   name: string;
 
   @IsString()
+  @MinLength(1)
+  barCode: string;
+
+  @IsString()
   description: string;
 
   @IsEnum(Category)

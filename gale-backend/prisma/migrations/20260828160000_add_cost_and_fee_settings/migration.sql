@@ -1,0 +1,5 @@
+ALTER TABLE "OrderDetail" ADD COLUMN "totalCost" DECIMAL(10,4);
+
+ALTER TABLE "SiteSettings" ADD COLUMN "creditCardFeePercent" DECIMAL(5,2) NOT NULL DEFAULT 0;
+ALTER TABLE "SiteSettings" ADD COLUMN "debitCardFeePercent" DECIMAL(5,2) NOT NULL DEFAULT 0;
+ALTER TABLE "SiteSettings" ADD COLUMN "pixFeePercent" DECIMAL(5,2) NOT NULL DEFAULT 0;

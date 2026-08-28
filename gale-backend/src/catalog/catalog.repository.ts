@@ -24,6 +24,7 @@ export class CatalogRepository {
     const client = tx ?? this.prisma;
     return client.catalog.findMany({
       where: { id: { in: productIds } },
+      include: { product: { select: { name: true } } },
     });
   }
 
@@ -71,6 +72,31 @@ export class CatalogRepository {
       },
       data: {
         available,
+      },
+    });
+  }
+
+  async findAllWithProductsAndStock() {
+    return this.prisma.catalog.findMany({
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            barCode: true,
+            description: true,
+            category: true,
+            pack: true,
+            sizeType: true,
+            size: true,
+            imgUrl: true,
+            stockEntries: {
+              select: {
+                quantityOnStock: true,
+              },
+            },
+          },
+        },
       },
     });
   }

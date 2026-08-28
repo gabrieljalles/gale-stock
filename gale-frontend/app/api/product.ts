@@ -15,6 +15,16 @@ export const createProduct = async (
   return response.data;
 };
 
+export const updateProduct = async (
+  id: string,
+  data: Partial<Omit<ProductProps, "id" | "createdAt" | "updatedAt">>,
+) => {
+  const response = await requestWithAuth(() =>
+    api.patch(`/products/${id}`, data),
+  );
+  return response.data;
+};
+
 export const deleteProduct = async (id: string) => {
   const response = await requestWithAuth(() => api.delete(`/products/${id}`));
   return response.data;

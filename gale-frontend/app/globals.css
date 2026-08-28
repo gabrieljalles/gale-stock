@@ -8,10 +8,71 @@
   --font-sans: "Roboto", sans-serif;
 }
 
+/* ==========================================================================
+   PAINEL DE CORES DO PROJETO
+   Este é o único lugar que precisa ser editado para alterar as cores usadas
+   em toda a aplicação. Os valores abaixo são consumidos pelo tailwind.config.ts,
+   então classes como "text-red-500" ou "bg-gray-100" continuam funcionando
+   normalmente em qualquer componente, só que agora resolvem para as variáveis
+   definidas aqui.
+   ========================================================================== */
 :root {
+  /* Cores de marca */
   --color-bg: #f8fdfc; /* Fundo para light */
   --color-primary: #131e33; /* Primary para light */
   --color-secondary: #f8bd1e; /* Secondary (igual para ambos) */
+
+  /* Escala de cinza (neutros / textos / bordas / fundos) */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-slate-50: #f8fafc;
+
+  /* Vermelho (erros / exclusão) */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+
+  /* Verde (sucesso / positivo) */
+  --color-green-100: #dcfce7;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-800: #166534;
+
+  /* Azul (informação / ações secundárias) */
+  --color-blue-50: #eff6ff;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-900: #1e3a8a;
+
+  /* Amarelo (alertas / avisos) */
+  --color-yellow-100: #fef9c3;
+  --color-yellow-500: #eab308;
+  --color-yellow-600: #ca8a04;
+  --color-yellow-800: #854d0e;
+
+  /* Laranja (avisos intermediários) */
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+
+  /* Roxo */
+  --color-purple-600: #9333ea;
+
+  /* Barra de rolagem */
+  --color-scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  --color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
 }
 
 .sonner_toast {
@@ -23,6 +84,38 @@
   --color-bg: #131e33; /* Fundo para dark */
   --color-primary: #f8fdfc; /* Primary para dark */
   /* --color-secondary permanece #f8bd1e */
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+}
+
+/* ==========================================================================
+   BARRAS DE ROLAGEM PADRONIZADAS
+   Aplica um visual fino e minimalista a toda barra de rolagem do projeto,
+   em vez da barra grossa padrão do navegador.
+   ========================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-scrollbar-thumb-hover);
 }
 
 .p-styled {

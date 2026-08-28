@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupplierRepository } from './supplier.repository';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
+import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { Supplier } from '@prisma/client';
 
 @Injectable()
@@ -25,6 +26,12 @@ export class SupplierService {
     }
 
     return supplier;
+  }
+
+  async update(id: string, data: UpdateSupplierDto): Promise<Supplier> {
+    await this.findById(id); // Verifica se o fornecedor existe
+
+    return this.repository.update(id, data);
   }
 
   async delete(id: string): Promise<{ message: string }> {

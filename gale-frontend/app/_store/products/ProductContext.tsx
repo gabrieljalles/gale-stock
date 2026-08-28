@@ -15,6 +15,7 @@ interface ProductContextType {
   error: Error | null;
   refresh: () => void;
   addProduct: (product: ProductProps) => void;
+  updateProduct: (id: string, product: Partial<ProductProps>) => void;
   removeProduct: (id: string) => void;
 }
 
@@ -24,6 +25,7 @@ const ProductContext = createContext<ProductContextType>({
   error: null,
   refresh: async () => {},
   addProduct: (p) => {},
+  updateProduct: (id, p) => {},
   removeProduct: (id) => {},
 });
 
@@ -56,12 +58,19 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     setProducts((prev) => (prev ? prev.filter((p) => p.id !== id) : []));
   };
 
+  const updateProduct = (id: string, product: Partial<ProductProps>) => {
+    setProducts((prev) =>
+      prev ? prev.map((p) => (p.id === id ? { ...p, ...product } : p)) : [],
+    );
+  };
+
   return (
     <ProductContext.Provider
       value={{
         products,
         loading,
         addProduct,
+        updateProduct,
         removeProduct,
         error,
         refresh: fetch,

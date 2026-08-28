@@ -46,7 +46,11 @@ export class CreateOrderTransactionDto {
 }
 
 export class CreateOrderAddressDto {
-  
+
+  @IsOptional()
+  @IsString()
+  recipientName?: string;
+
   @IsOptional()
   @IsEnum(TypeAddress)
   typeAddress?: TypeAddress;

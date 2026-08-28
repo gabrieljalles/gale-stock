@@ -57,41 +57,43 @@ const Filter = <T,>({
 
   return (
     <div className="mb-4 flex w-full flex-col gap-2">
-      <div className="flex w-full gap-2">
+      <div className="flex w-full flex-col gap-2 sm:flex-row">
         <input
           type="text"
           placeholder={searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 rounded border p-2 text-sm"
+          className="w-full flex-1 rounded border p-2 text-sm sm:w-auto"
         />
 
-        {/* Só mostrar o select se houver categoryField */}
-        {categoryField && categories.length > 0 && (
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="rounded border p-2 text-sm"
-          >
-            <option value="">{categoryPlaceholder}</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {categoryTranslator ? categoryTranslator(c) : c}
-              </option>
-            ))}
-          </select>
-        )}
+        <div className="flex gap-2">
+          {/* Só mostrar o select se houver categoryField */}
+          {categoryField && categories.length > 0 && (
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="min-w-0 flex-1 rounded border p-2 text-sm sm:flex-none"
+            >
+              <option value="">{categoryPlaceholder}</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {categoryTranslator ? categoryTranslator(c) : c}
+                </option>
+              ))}
+            </select>
+          )}
 
-        <Button
-          onClick={() => {
-            setSearch("");
-            setCategory("");
-            onFilter(data ?? []);
-          }}
-          className="rounded border px-3 py-2 text-sm text-white hover:border-secondary hover:text-secondary"
-        >
-          Limpar
-        </Button>
+          <Button
+            onClick={() => {
+              setSearch("");
+              setCategory("");
+              onFilter(data ?? []);
+            }}
+            className="flex-shrink-0 rounded border px-3 py-2 text-sm text-white hover:border-secondary hover:text-secondary"
+          >
+            Limpar
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -7,6 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Configurações gerais do site. Linha única (id fixo = 1).
+model SiteSettings {
+  id                      Int      @id @default(1)
+  storeOpen               Boolean  @default(true) // Liga/desliga manualmente se a loja aceita pedidos agora
+  autoCloseEnabled        Boolean  @default(false) // Se true, fecha a loja automaticamente para usuários comuns após storeCloseHour
+  storeCloseHour          Int      @default(22) // Hora (0-23) em que a loja fecha automaticamente
+  nightPriceEnabled       Boolean  @default(true) // Se falso, o preço noturno nunca é aplicado
+  nightPriceStartHour     Int      @default(23) // Hora (0-23) em que o preço noturno começa a valer
+  nightPriceEndHour       Int      @default(7) // Hora (0-23) em que o preço noturno deixa de valer
+  nightPriceMarkupPercent Decimal  @default(5) @db.Decimal(5, 2) // % de acréscimo no preço noturno (padrão 5%)
+  ifoodMarkupPercent      Decimal  @default(27) @db.Decimal(5, 2) // % de comissão do iFood embutida no preço (padrão 27%)
+  freightPrice            Decimal  @default(5) @db.Decimal(10, 2) // Valor fixo do frete para entrega
+  deliveryEnabled         Boolean  @default(true) // Se falso, omite a opção de delivery na hora da venda
+
+  // Taxas cobradas pela maquininha/operadora em cima do valor da venda.
+  // Usadas para descontar do faturamento o quanto realmente entrou no caixa
+  // (ainda não aplicado na venda em si, só disponível aqui por enquanto).
+  creditCardFeePercent    Decimal  @default(0) @db.Decimal(5, 2)
+  debitCardFeePercent     Decimal  @default(0) @db.Decimal(5, 2)
+  pixFeePercent           Decimal  @default(0) @db.Decimal(5, 2)
+
+  updatedAt               DateTime @updatedAt
+}
+
 model Product {
   id           String              @id
   name         String @unique
@@ -70,6 +94,7 @@ model StockEntryDetail {
   id               String           @id @default(cuid())
   stockTransactionId    String
   productId        String
+  productName      String // Nome do produto no momento da compra (não muda se o produto for editado depois)
   baseUnitCost Decimal @db.Decimal(10,4)
   landedUnitCost Decimal @db.Decimal(10,4)
   initialQuantity         Int
@@ -87,6 +112,7 @@ model LostEntry {
   //Adicionar quem adicionou essa perda no futuro.
   id         String     @id @default(cuid())
   productId  String
+  productName String // Nome do produto no momento da perda (não muda se o produto for editado depois)
   stockEntryDetailId String
   quantity   Int
   reasonLoss ReasonLoss
@@ -102,10 +128,11 @@ model Catalog {
   consumerNightPrice      Decimal? @db.Decimal(10,4) // Preço de mercado /0,95
   consumerPrice           Decimal? @db.Decimal(10,4) // Preço de mercado
   discountPackPrice       Decimal? @db.Decimal(10,4) // (Preço de mercado - liquidation price)*0,6 + liquidation price
-  liquidationPrice        Decimal? @db.Decimal(10,4) //Custo de aquisição (TAXA + FRETE) dividido por 0,87
+  liquidationPrice        Decimal? @db.Decimal(10,4) //Custo de aquisição (TAXA + FRETE) dividido por   
   isLiquidation           Boolean  @default(false) 
 
-  packageDiscountAmount   Int? 
+  packageDiscountAmount   Int?
+  wholesaleEnabled        Boolean  @default(true) // Liga/desliga o preço de atacado sem apagar os valores configurados
   available               Boolean  @default(false)
 
   createdAt               DateTime @default(now())
@@ -130,24 +157,43 @@ model Order {
   orderSource OrderSource?
   clientId String?
   deliveryManId String?
+  workDayId String? // Dia de trabalho ao qual essa venda pertence (null = ainda não atribuída, loja fechada)
   orderStatus OrderStatus @default(Confirmed)
   createdAT DateTime @default(now())
   updateAt DateTime @updatedAt
 
   client User? @relation("ClientOrders", fields: [clientId], references: [id])
   deliveryMan User? @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
+  workDay WorkDay? @relation(fields: [workDayId], references: [id])
   orderAddress OrderAddress?
   orderDetails OrderDetail[]
   orderTransaction OrderTransaction[]
+}
+
+// Um "dia de trabalho": do momento em que a loja abre até ela fechar
+// (manual ou automaticamente). Toda venda feita nesse intervalo é
+// atribuída aqui; vendas feitas com a loja fechada (só Admin pode)
+// ficam com workDayId nulo até a loja abrir de novo, quando são
+// resgatadas para o novo dia (ver WorkDayService.openStore).
+model WorkDay {
+  id        String    @id @default(cuid())
+  openedAt  DateTime  @default(now())
+  closedAt  DateTime?
+  openedBy  String? // id do Admin que abriu (null = automático/desconhecido)
+  closedBy  String? // id do Admin que fechou (null = fechamento automático)
+
+  orders    Order[]
 }
 
 model OrderDetail{
   id String @id @default(cuid())
   orderId String
   productId String
+  productName String // Nome do produto no momento da venda (não muda se o produto for editado depois)
   quantity Int
   unityPrice Decimal @db.Decimal(10,4)
   totalPrice Decimal @db.Decimal(10,4)
+  totalCost Decimal? @db.Decimal(10,4) // Custo (landedUnitCost) dos lotes de estoque efetivamente baixados (FIFO) nessa venda; usado pra calcular lucro
 
   catalog Catalog @relation(fields:[productId], references: [id])
   order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
@@ -159,6 +205,7 @@ model OrderTransaction{
   transactionType TransactionType?
   totalProductPrice Decimal @db.Decimal(10,4)
   freightPrice Decimal @db.Decimal(10,4)
+  interestAmount Decimal @default(0) @db.Decimal(10,4) // Juros/multa cobrado ao fechar uma notinha atrasada (já somado no totalPrice)
   totalPrice Decimal @db.Decimal(10,4)
   isPaid Boolean @default(false)
   paidDate DateTime?
@@ -171,6 +218,7 @@ model OrderTransaction{
 model OrderAddress{
   id String @id @default(cuid())
   orderId String? @unique
+  recipientName String? // Nome de quem recebe — essencial quando o pedido é de um cliente anônimo (sem conta)
   typeAddress TypeAddress
   address String
   number String

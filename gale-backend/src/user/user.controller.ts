@@ -87,4 +87,18 @@ export class UserController {
   ) {
     return this.userService.createAddressForUser(userId, dto);
   }
+
+  @Get('clients-for-tab')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async getClientsForTab(@Req() req) {
+    return this.userService.findClientsForTab(req.user?.role, req.user?.id);
+  }
+
+  @Get('clients')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'Shopper')
+  async getAllClients() {
+    return this.userService.findAllClients();
+  }
 }

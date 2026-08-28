@@ -1,6 +1,7 @@
 export interface LostEntryProps {
   id: string;
   productId: string;
+  productName: string;
   stockEntryDetailId: string;
   quantity: number;
   reasonLoss: ReasonLoss;

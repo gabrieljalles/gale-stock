@@ -10,48 +10,26 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CirclePlus } from "lucide-react";
 import { useContext, useState } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
-import NameInputAutocomplete from "../_tabs/products/_components/nameAutoCompleteInput";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/_components/ui/select";
-import {
-  categoryOptions,
-  translateCategory,
-  sizeTypeOptions,
-  translateSizeType,
-  categoryMap,
-} from "@/_constants/product";
-import { Input } from "@/_components/ui/input";
-import ImageUploadInput from "../_tabs/products/_components/imageUploadInput";
+import ProductFormFields from "../_tabs/products/_components/ProductFormFields";
+import { categoryMap, sizeTypeOptions } from "@/_constants/product";
 import { AuthContext } from "@/_store/auth/AuthContext";
 import { createProduct } from "@/api/product";
 import { useProducts } from "@/_store/products/ProductContext";
 import { toast } from "sonner";
-
-const categoryEnum = z.enum(
-  categoryOptions as [
-    keyof typeof categoryMap,
-    ...(keyof typeof categoryMap)[],
-  ],
-);
+import { isAxiosError } from "axios";
 
 const schema = z.object({
   name: z
     .string()
     .min(1, "Nome do produto é obrigatório (exe: Coca-cola 310ml)"),
   category: z.string(),
+  barCode: z.string().min(1, "Código de barras é obrigatório"),
   description: z.string().max(250, "No máximo 250 caracteres"),
   sizeType: z.enum([...sizeTypeOptions] as [string, ...string[]], {
     required_error: "Tipo de tamanho obrigatório",
   }),
-  nfeAccessKey: z.string().optional(),
   size: z
     .string()
     .min(1, "Tamanho obrigatório")
@@ -74,10 +52,6 @@ const NewProduct = () => {
   const { user } = useContext(AuthContext);
   const { addProduct } = useProducts();
 
-  if (!user || !["Admin"].includes(user.role)) {
-    return <div></div>;
-  }
-
   const methods = useForm<FormData>({
     resolver: zodResolver(schema),
   });
@@ -88,12 +62,17 @@ const NewProduct = () => {
     formState: { errors },
   } = methods;
 
+  if (!user || !["Admin"].includes(user.role)) {
+    return <div></div>;
+  }
+
   const onSubmit = async (data: FormData) => {
     try {
       const sizeFormatted = data.size.replace(",", ".");
       const created = await createProduct({
         name: data.name,
         category: data.category as keyof typeof categoryMap,
+        barCode: data.barCode,
         description: data.description,
         sizeType: data.sizeType as "g" | "L" | "ml" | "mg" | "kg" | "un",
         size: sizeFormatted,
@@ -104,10 +83,12 @@ const NewProduct = () => {
       addProduct(created);
       reset();
       setOpen(false);
-      toast.success("Produto criado com sucesso!");
-    } catch (error) {}
-    reset();
-    setOpen(false);
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? error.response?.data?.message
+        : undefined;
+      toast.error(message || "Erro ao criar produto. Tente novamente.");
+    }
   };
 
   return (
@@ -122,7 +103,7 @@ const NewProduct = () => {
       </Button>
       <Drawer open={open} onOpenChange={setOpen} direction="right">
         <DrawerContent className="fixed right-0 top-0 flex h-screen w-full max-w-[360px] flex-col rounded-md border-l bg-white shadow-lg">
-          <DrawerHeader>
+          <DrawerHeader className="py-2">
             <DrawerTitle>Novo Produto</DrawerTitle>
             <DrawerClose asChild>
               <Button variant="ghost" className="absolute right-2 top-2">
@@ -133,149 +114,11 @@ const NewProduct = () => {
           <FormProvider {...methods}>
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-1 flex-col gap-2 overflow-y-auto p-4"
+              className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-3"
             >
-              {/* Nome */}
-              <div>
-                <label className="mb-1 block text-xs font-bold">Nome</label>
-                <NameInputAutocomplete {...methods.register("name")} />
-                {errors.name && (
-                  <span className="text-xs text-red-500">
-                    {errors.name.message}
-                  </span>
-                )}
-              </div>
+              <ProductFormFields mode="create" />
 
-              {/*Categoria  */}
-              <div>
-                <label className="mb-1 block text-xs font-bold">
-                  Categoria
-                </label>
-                <Controller
-                  name="category"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione a categoria..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white">
-                        <SelectGroup>
-                          {categoryOptions.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {translateCategory(cat)}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.category && (
-                  <span className="text-xs text-red-500">
-                    {errors.category.message}
-                  </span>
-                )}
-              </div>
-
-              {/* Descrição */}
-              <div>
-                <label className="mb-1 block text-xs font-bold">
-                  Descrição
-                </label>
-                <textarea
-                  {...methods.register("description")}
-                  className="min-h-[80px] w-full resize-y rounded border p-2"
-                  placeholder="Descreva o produto"
-                />
-                {errors.description && (
-                  <span className="text-xs text-red-500">
-                    {errors.description.message}
-                  </span>
-                )}
-              </div>
-
-              {/* Tipo de tamanho */}
-              <div>
-                <label className="mb-1 block text-xs font-bold">Tipo</label>
-                <Controller
-                  name="sizeType"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione tipo..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white">
-                        <SelectGroup>
-                          {sizeTypeOptions.map((size) => (
-                            <SelectItem key={size} value={size}>
-                              {translateSizeType(size)}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-
-                {errors.sizeType && (
-                  <span className="text-xs text-red-500">
-                    {errors.sizeType.message}
-                  </span>
-                )}
-              </div>
-
-              {/* Tamanho */}
-              <div>
-                <label className="mb-1 block text-xs font-bold">Tamanho</label>
-                <Input
-                  type="text"
-                  {...methods.register("size")}
-                  placeholder="Ex: 310"
-                />
-                {errors.size && (
-                  <span className="text-xs text-red-500">
-                    {errors.size.message}
-                  </span>
-                )}
-              </div>
-
-              {/* Pack*/}
-              <div>
-                <label className="mb-1 block text-xs font-bold">Pack</label>
-                <Input
-                  type="text"
-                  {...methods.register("pack")}
-                  placeholder="Ex: 12, 18, Opte pelo pacote comercial"
-                />
-                {errors.pack && (
-                  <span className="text-xs text-red-500">
-                    {errors.pack.message}
-                  </span>
-                )}
-              </div>
-
-              {/* img */}
-              <div>
-                <Controller
-                  name="imgUrl"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <ImageUploadInput
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                {errors.imgUrl && (
-                  <span className="text-xs text-red-500">
-                    {errors.imgUrl.message}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex gap-2 border-t p-4">
+              <div className="flex gap-2 border-t pt-3">
                 <Button
                   type="submit"
                   className="flex-1 text-white hover:bg-green-500"

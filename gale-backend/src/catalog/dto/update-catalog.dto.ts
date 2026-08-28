@@ -1,40 +1,47 @@
-import { Type } from "class-transformer";
-import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, Min } from "class-validator";
+import { Type } from 'class-transformer';
+import { IsBoolean, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateCatalogDto {
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    finalConsumerPrice?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  consumerPrice?: number;
 
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    finalIfoodConsumerPrice?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  consumerNightPrice?: number;
 
-    @IsOptional()
-    @IsBoolean()
-    isLiquidation?: boolean;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  consumerIfoodPrice?: number;
 
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    discountPrice?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  liquidationPrice?: number;
 
-    @IsOptional()
-    @IsInt()
-    quantityDiscount?: number;
+  @IsOptional()
+  @IsBoolean()
+  isLiquidation?: boolean;
 
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    discountQtdPrice?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  discountPackPrice?: number;
 
-    @IsOptional()
-    @IsInt()
-    stock?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  packageDiscountAmount?: number;
 
-    @IsOptional()
-    @IsBoolean()
-    available?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  wholesaleEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  available?: boolean;
 }

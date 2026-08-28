@@ -61,3 +61,5 @@ export const logout = async () => {
     return Promise.resolve();
   });
 };
+
+export { requestWithAuth };

@@ -16,6 +16,7 @@ export function getUnitPrice(
   }
 
   const hasPackageDiscount =
+    product.wholesaleEnabled &&
     typeof product.packageDiscountAmount === 'number' &&
     product.packageDiscountAmount > 0 &&
     product.discountPackPrice != null &&
@@ -23,11 +24,9 @@ export function getUnitPrice(
     quantity >= product.packageDiscountAmount;
 
 
-  if (hasPackageDiscount && isNight) {
-    return product.liquidationPrice!;
-  }
-
-  if(hasPackageDiscount && !isNight){
+  // Preço de atacado é um valor fixo negociado por quantidade — não existe
+  // uma versão "noturna" dele, então vale independente do horário.
+  if (hasPackageDiscount) {
     return product.discountPackPrice!;
   }
 

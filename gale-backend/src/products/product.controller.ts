@@ -4,11 +4,13 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { Public } from 'src/auth/public.decorator';
 import { Roles } from 'src/auth/roles.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
@@ -34,6 +36,13 @@ export class ProductController {
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.service.findById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin')
+  update(@Param('id') id: string, @Body() body: UpdateProductDto) {
+    return this.service.update(id, body);
   }
 
   @Delete(':id')

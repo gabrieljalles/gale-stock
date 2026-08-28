@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Button } from "@/_components/ui/button";
 import { Pen, X } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
+import EditProduct from "./EditProduct";
 
 interface ProductCardProps {
   product: ProductProps;
@@ -12,6 +14,8 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, onDelete }: ProductCardProps) => {
+  const [editOpen, setEditOpen] = useState(false);
+
   const handleDelete = async () => {
     if (confirm(`Excluir ${product.name}? Esta ação não pode ser desfeita.`)) {
       const fileKey = product.imgUrl.split("/").pop();
@@ -35,18 +39,24 @@ const ProductCard = ({ product, onDelete }: ProductCardProps) => {
   return (
     <Card
       key={product.id}
-      className="flex items-start gap-2 rounded-t-md p-0 pb-3"
+      className="flex items-start gap-2 rounded-t-md bg-white p-0 pb-3"
     >
       <CardContent className="flex w-full flex-col gap-2 p-0">
         {/* Category */}
-        <div className="flex w-full items-center justify-center rounded-md bg-slate-50 p-1 px-1 text-sm text-gray-400">
+        <div className="flex w-full items-center justify-center rounded-md bg-gray-100 p-1 px-1 text-sm text-gray-400">
           <span className="flex flex-1 items-center justify-center">
             {translateCategory(product.category)}
           </span>
 
           {/* Options */}
           <div className="flex gap-1">
-            {/* <Button variant="ghost" className="w-1 h-1 p-3 cursor-none disabled"><Pen/></Button> */}
+            <Button
+              variant="outline"
+              onClick={() => setEditOpen(true)}
+              className="h-1 w-1 p-3 hover:bg-primary hover:text-white"
+            >
+              <Pen />
+            </Button>
             <Button
               variant="outline"
               onClick={handleDelete}
@@ -73,6 +83,12 @@ const ProductCard = ({ product, onDelete }: ProductCardProps) => {
           {product.description}
         </div>
       </CardContent>
+
+      <EditProduct
+        product={product}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </Card>
   );
 };

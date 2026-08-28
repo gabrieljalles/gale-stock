@@ -10,7 +10,7 @@ const LogoComponent = () => {
           alt="Logo da Loja (versão clara)"
           width={60}
           height={60}
-          className="mx-auto animate-float transition-transform duration-300 hover:animate-bounce"
+          className="mx-auto animate-float"
         />
       </Link>
     </div>

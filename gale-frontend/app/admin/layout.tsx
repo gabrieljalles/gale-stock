@@ -3,8 +3,8 @@
 import { useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/_store/auth/AuthContext";
-import LogoComponent from "@/_components/LogoComponent";
 import { SupplierProvider } from "@/_store/supplier/SupplierContext";
+import Loading from "@/_components/loadingComponent";
 
 export default function AdminLayout({
   children,
@@ -23,7 +23,7 @@ export default function AdminLayout({
     }
   }, [user, isLoading, router]);
 
-  if (isLoading) return <LogoComponent />;
+  if (isLoading) return <Loading />;
 
   return <SupplierProvider>{children}</SupplierProvider>;
 }

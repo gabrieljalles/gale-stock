@@ -135,6 +135,37 @@ export class UserService {
     return user;
   }
 
+  // Todos os clientes cadastrados, pra vincular a um pedido (ex: delivery)
+  // sem a restrição de canPayOnTheBill — essa regra é só pra notinha.
+  async findAllClients() {
+    return this.repository.findManyClients(false);
+  }
+
+  // Clientes elegíveis pra receber notinha. Admin vê todo mundo (pode dar
+  // notinha pra quem quiser); os demais só veem quem já é autorizado
+  // (canPayOnTheBill) — a mesma regra é reforçada no lado do pedido.
+  // Quem está fazendo a venda também aparece na lista (pra poder se
+  // escolher), mesmo não sendo uma conta "Client" — a autorização de
+  // canPayOnTheBill continua valendo normalmente pra essa própria conta.
+  async findClientsForTab(requesterRole?: string, requesterId?: string) {
+    const clients = await this.repository.findManyClients(
+      requesterRole !== 'Admin',
+    );
+
+    if (requesterId && !clients.some((c) => c.id === requesterId)) {
+      const self = await this.repository.findById(requesterId);
+      if (self) {
+        clients.push({
+          id: self.id,
+          fullName: `${self.fullName} (você)`,
+          canPayOnTheBill: self.canPayOnTheBill,
+        });
+      }
+    }
+
+    return clients.sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }
+
   async findAddressByAddressId(addressId: string) {
     const address = await this.repository.findUserAddress(addressId);
     if (!address) {

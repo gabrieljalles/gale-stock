@@ -16,6 +16,7 @@ export class LostEntryRepository {
   async createLoss(
     data: {
       productId: string;
+      productName: string;
       stockEntryDetailId: string;
       quantity: number;
       reasonLoss: any;
@@ -125,6 +126,14 @@ export class LostEntryRepository {
     return client.stockEntryDetail.update({
       where: { id: stockEntryDetailId },
       data: { quantityOnStock: newQuantity },
+    });
+  }
+
+  async findProductNameById(productId: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return client.product.findUnique({
+      where: { id: productId },
+      select: { name: true },
     });
   }
 

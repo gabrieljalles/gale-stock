@@ -19,9 +19,14 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailService } from './user/mail.service';
 import { join } from 'path';
+import { SettingsModule } from './settings/settings.module';
+import { WorkDayModule } from './work-day/work-day.module';
+import { ReportsModule } from './reports/reports.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     MailerModule.forRoot({
       transport: {
         host: process.env.MAIL_HOST,
@@ -50,6 +55,9 @@ import { join } from 'path';
     AuthModule,
     UserModule,
     OrderModule,
+    SettingsModule,
+    WorkDayModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -20,6 +20,15 @@ export class LostEntryService {
 
     // Executar toda a operação em uma transação
     return this.lostEntryRepository.runInTransaction(async (tx) => {
+      const product = await this.lostEntryRepository.findProductNameById(
+        productId,
+        tx,
+      );
+
+      if (!product) {
+        throw new NotFoundException(`Produto ${productId} não encontrado`);
+      }
+
       let stockEntries;
 
       // Se data de validade foi fornecida, buscar por produto e data específica
@@ -90,6 +99,7 @@ export class LostEntryService {
         const lossEntry = await this.lostEntryRepository.createLoss(
           {
             productId,
+            productName: product.name,
             stockEntryDetailId: stockEntry.id,
             quantity: quantityFromThisEntry,
             reasonLoss,

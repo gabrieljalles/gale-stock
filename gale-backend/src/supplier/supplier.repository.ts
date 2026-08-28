@@ -26,6 +26,16 @@ export class SupplierRepository {
     return this.prisma.supplier.findUnique({ where: { id } });
   }
 
+  async update(
+    id: string,
+    data: Partial<Omit<Prisma.SupplierUpdateInput, 'id'>>,
+  ): Promise<Supplier> {
+    return this.prisma.supplier.update({
+      where: { id },
+      data,
+    });
+  }
+
   async delete(id: string): Promise<Supplier> {
     return this.prisma.supplier.delete({ where: { id } });
   }

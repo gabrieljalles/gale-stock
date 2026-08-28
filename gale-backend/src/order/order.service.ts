@@ -8,6 +8,8 @@ import { OrderRepository } from './order.repository';
 import { CatalogService } from 'src/catalog/catalog.service';
 import { CreateFullOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { UserService } from 'src/user/user.service';
+import { SettingsService } from 'src/settings/settings.service';
+import { WorkDayService } from 'src/work-day/work-day.service';
 import { NotFoundError } from 'rxjs';
 import {
   DeliveryType,
@@ -24,16 +26,32 @@ export class OrderService {
     private readonly repository: OrderRepository,
     private readonly catalogService: CatalogService,
     private readonly userService: UserService,
+    private readonly settingsService: SettingsService,
+    private readonly workDayService: WorkDayService,
   ) {}
 
-  async createOrderByShopper(dto: CreateFullOrderDto) {
+  async createOrderByShopper(dto: CreateFullOrderDto, requesterRole?: string) {
     const { order, orderDetails, orderTransaction, orderAddress } = dto;
     const now = new Date();
-    const hour = now.getHours();
 
-    //Variáveis sem dinamismo;
-    const isNight = hour >= 23 || hour < 7;
-    const freightValue = 5;
+    const settings = await this.settingsService.getSettings();
+
+    // Admin pode vender a qualquer momento, mesmo com a loja fechada
+    // (manual ou automaticamente pelo horário de fechamento).
+    if (requesterRole !== 'Admin') {
+      const storeOpenNow = await this.settingsService.isStoreOpenNow(now);
+      if (!storeOpenNow) {
+        throw new ForbiddenException(
+          'A loja está fechada no momento. Não é possível registrar novos pedidos.',
+        );
+      }
+    }
+
+    const isNight = await this.settingsService.isNightPrice(now);
+    const freightValue = Number(settings.freightPrice);
+    // Se a loja estiver fechada (venda feita pelo Admin), fica sem dia de
+    // trabalho por enquanto; é atribuída ao próximo dia quando a loja abrir.
+    const workDayId = await this.workDayService.findOpenWorkDayId();
 
     //Separeting IDS
     const clientId = order.clientId?.trim();
@@ -60,7 +78,9 @@ export class OrderService {
         );
       }
 
-      if (!client.canPayOnTheBill) {
+      // Admin pode dar notinha pra qualquer cliente; os demais só podem
+      // atribuir a clientes já autorizados (canPayOnTheBill).
+      if (!client.canPayOnTheBill && requesterRole !== 'Admin') {
         throw new ForbiddenException(
           `Cliente ${client.fullName} não está autorizado a pegar fiado.`,
         );
@@ -121,6 +141,7 @@ export class OrderService {
           orderStatus: order.orderStatus,
           ...(clientConnect && { client: clientConnect }),
           ...(deliveryManConnect && { deliveryMan: deliveryManConnect }),
+          ...(workDayId && { workDay: { connect: { id: workDayId } } }),
         };
 
         orderCreated = await this.repository.createOrder(orderPayload, tx);
@@ -132,7 +153,64 @@ export class OrderService {
 
       //Insert Order details
       try {
-        const detailsWithPrices = orderDetails.map((item) => {
+        // Baixar o estoque (FIFO) antes de confirmar o pedido, guardando
+        // quanto de custo (landedUnitCost dos lotes baixados) cada item
+        // consumiu — usado depois pra calcular lucro por dia de trabalho.
+        const productsOutOfStock: string[] = [];
+        // Alinhado por índice (não por productId) para não colidir caso o
+        // mesmo produto apareça em mais de uma linha do pedido.
+        const costPerLine: Prisma.Decimal[] = [];
+
+        for (const item of orderDetails) {
+          const stockEntries =
+            await this.repository.findAvailableStockEntriesByProductId(
+              item.productId,
+              tx,
+            );
+
+          const totalAvailable = stockEntries.reduce(
+            (sum, entry) => sum + entry.quantityOnStock,
+            0,
+          );
+
+          if (totalAvailable < item.quantity) {
+            throw new BadRequestException(
+              `Estoque insuficiente para o produto ${item.productId}. Disponível: ${totalAvailable}, Solicitado: ${item.quantity}`,
+            );
+          }
+
+          let remainingToDeduct = item.quantity;
+          let itemCost = new Prisma.Decimal(0);
+
+          for (const entry of stockEntries) {
+            if (remainingToDeduct <= 0) break;
+
+            const deductFromThisEntry = Math.min(
+              entry.quantityOnStock,
+              remainingToDeduct,
+            );
+            const newQuantity = entry.quantityOnStock - deductFromThisEntry;
+
+            await this.repository.updateStockEntryQuantity(
+              entry.id,
+              newQuantity,
+              tx,
+            );
+
+            itemCost = itemCost.add(
+              entry.landedUnitCost.mul(deductFromThisEntry),
+            );
+            remainingToDeduct -= deductFromThisEntry;
+          }
+
+          costPerLine.push(itemCost);
+
+          if (totalAvailable - item.quantity === 0) {
+            productsOutOfStock.push(item.productId);
+          }
+        }
+
+        const detailsWithPrices = orderDetails.map((item, index) => {
           const product = products.find((p) => p.id === item.productId);
 
           if (!product) {
@@ -160,9 +238,11 @@ export class OrderService {
           return {
             order: { connect: { id: orderCreated.id } },
             catalog: { connect: { id: item.productId } },
+            productName: product.product.name,
             quantity: item.quantity,
             unityPrice,
             totalPrice,
+            totalCost: costPerLine[index],
           };
         });
 
@@ -171,7 +251,15 @@ export class OrderService {
           totalProductPrice = totalProductPrice.add(detail.totalPrice);
         }
 
-        console.log('✅ Created orderDetails.');
+        if (productsOutOfStock.length > 0) {
+          await this.catalogService.updateProductsAvailability(
+            productsOutOfStock,
+            false,
+            tx,
+          );
+        }
+
+        console.log('✅ Created orderDetails and updated stock.');
       } catch (err) {
         console.error('❌ Error creating orderDetails:', err);
         throw err;
@@ -210,6 +298,7 @@ export class OrderService {
         try {
           const addressPayload: Prisma.OrderAddressCreateInput = {
             order: { connect: { id: orderCreated.id } },
+            recipientName: orderAddress?.recipientName ?? client?.fullName,
             typeAddress: address?.typeAddress ?? orderAddress!.typeAddress!,
             address: address?.address ?? orderAddress!.address!,
             number: address?.number ?? orderAddress!.number!,
@@ -225,6 +314,106 @@ export class OrderService {
           throw err;
         }
       }
+    });
+  }
+
+  // Notinhas em aberto, condensadas por cliente (nome, total devido e os
+  // produtos comprados em cada pedido ainda não pago).
+  async getOpenTabs() {
+    const orders = await this.repository.findOpenTabOrders();
+
+    const byClient = new Map<
+      string,
+      {
+        clientId: string;
+        clientName: string;
+        total: number;
+        orders: {
+          orderId: string;
+          createdAt: Date;
+          total: number;
+          products: {
+            productName: string;
+            quantity: number;
+            unityPrice: number;
+            totalPrice: number;
+          }[];
+        }[];
+      }
+    >();
+
+    for (const order of orders) {
+      if (!order.client) continue;
+
+      const orderTotal = (order.orderTransaction ?? []).reduce(
+        (sum, tx) => sum + Number(tx.totalPrice),
+        0,
+      );
+
+      const existing = byClient.get(order.clientId!) ?? {
+        clientId: order.clientId!,
+        clientName: order.client.fullName,
+        total: 0,
+        orders: [],
+      };
+
+      existing.total += orderTotal;
+      existing.orders.push({
+        orderId: order.id,
+        createdAt: order.createdAT,
+        total: orderTotal,
+        products: (order.orderDetails ?? []).map((detail) => ({
+          productName: detail.productName,
+          quantity: detail.quantity,
+          unityPrice: Number(detail.unityPrice),
+          totalPrice: Number(detail.totalPrice),
+        })),
+      });
+
+      byClient.set(order.clientId!, existing);
+    }
+
+    return Array.from(byClient.values()).sort((a, b) => b.total - a.total);
+  }
+
+  // Fecha a conta: marca todas as notinhas em aberto desse cliente como
+  // pagas, com o método de pagamento real escolhido na hora. O faturamento
+  // dessas vendas passa a contar no dia de trabalho em que foram PAGAS
+  // (não no dia em que os produtos saíram) — se a loja estiver fechada
+  // agora, ficam pendentes até a próxima abertura, igual às vendas do
+  // Admin com a loja fechada.
+  async closeTab(
+    clientId: string,
+    transactionType: TransactionType,
+    interestAmount = 0,
+  ) {
+    return this.repository.runInTransaction(async (tx) => {
+      // Mais antigo primeiro — a multa é somada só na notinha mais velha.
+      const orders = await this.repository.findOpenTabOrdersByClient(
+        clientId,
+        tx,
+      );
+
+      if (orders.length === 0) {
+        throw new NotFoundException(
+          'Nenhuma notinha em aberto para esse cliente.',
+        );
+      }
+
+      const workDayId = await this.workDayService.findOpenWorkDayId();
+      const interestDecimal = new Prisma.Decimal(interestAmount);
+
+      for (const [index, order] of orders.entries()) {
+        await this.repository.closeTabOrder(
+          order.id,
+          workDayId,
+          transactionType,
+          index === 0 ? interestDecimal : new Prisma.Decimal(0),
+          tx,
+        );
+      }
+
+      return { closedOrders: orders.length };
     });
   }
 }

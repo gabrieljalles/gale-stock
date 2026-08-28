@@ -7,6 +7,8 @@ import Filter from "../../../_components/filter";
 import NewProduct from "../../_components/newProduct";
 import { deleteProduct } from "@/api/product";
 import { translateCategory } from "@/_constants";
+import { toast } from "sonner";
+import { isAxiosError } from "axios";
 
 const ProductsTab = () => {
   const { products, loading, error, refresh, removeProduct } = useProducts();
@@ -18,8 +20,6 @@ const ProductsTab = () => {
 
   return (
     <div className="flex h-full max-h-screen w-full flex-col space-y-4">
-      <h2 className="text-md font-semibold">Produtos cadastrados</h2>
-
       {/* Functions */}
       <div>
         <NewProduct />
@@ -63,8 +63,18 @@ const ProductsTab = () => {
                 key={product.id}
                 product={product}
                 onDelete={async (id) => {
-                  await deleteProduct(id);
-                  removeProduct(id);
+                  try {
+                    await deleteProduct(id);
+                    removeProduct(id);
+                    toast.success("Produto excluído com sucesso!");
+                  } catch (error) {
+                    const message = isAxiosError(error)
+                      ? error.response?.data?.message
+                      : undefined;
+                    toast.error(
+                      message || "Erro ao excluir produto. Tente novamente.",
+                    );
+                  }
                 }}
               />
             ))}

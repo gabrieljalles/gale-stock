@@ -28,6 +28,13 @@ export class ProductRepository {
     return this.prisma.product.findUnique({ where: { id } });
   }
 
+  async update(
+    id: string,
+    data: Prisma.ProductUpdateInput,
+  ): Promise<Product> {
+    return this.prisma.product.update({ where: { id }, data });
+  }
+
   async delete(id: string): Promise<Product> {
     return this.prisma.product.delete({ where: { id } });
   }

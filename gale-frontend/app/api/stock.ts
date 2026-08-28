@@ -75,4 +75,15 @@ export const deleteStockTransaction = async (transactionId: string) => {
   return response.data;
 };
 
+//Corrige uma entrada de estoque (quantidade e/ou validade)
+export const updateStockEntryDetail = async (
+  entryId: string,
+  data: { quantityOnStock?: number; validityDate?: string },
+) => {
+  const response = await requestWithAuth(() =>
+    api.patch(`${STOCK_TRANSACTION_ENDPOINT}/entry-detail/${entryId}`, data),
+  );
+  return response.data;
+};
+
 

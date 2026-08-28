@@ -46,11 +46,16 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
         appearance={{
           button: {
             background: "#131e33",
-            padding: "1rem",
+            padding: "0.4rem 0.75rem",
+            fontSize: "0.75rem",
+            height: "auto",
             color: "#fff",
           },
           container: {
             display: "flex",
+          },
+          allowedContent: {
+            fontSize: "0.65rem",
           },
         }}
         onBeforeUploadBegin={async (files) => {

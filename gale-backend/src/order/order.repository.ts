@@ -44,4 +44,83 @@ export class OrderRepository {
   ) {
     return tx.orderAddress.create({ data });
   }
+
+  // Buscar lotes de estoque disponíveis por produto, mais antigo primeiro (FIFO)
+  async findAvailableStockEntriesByProductId(
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.stockEntryDetail.findMany({
+      where: {
+        productId,
+        quantityOnStock: { gt: 0 },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async updateStockEntryQuantity(
+    stockEntryDetailId: string,
+    newQuantity: number,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.stockEntryDetail.update({
+      where: { id: stockEntryDetailId },
+      data: { quantityOnStock: newQuantity },
+    });
+  }
+
+  // Notinhas em aberto: pedidos de balcão pagos "OnTheBill" que ainda não
+  // foram fechados (isPaid: false), agrupáveis por cliente.
+  async findOpenTabOrders() {
+    return this.prisma.order.findMany({
+      where: {
+        clientId: { not: null },
+        orderTransaction: { some: { transactionType: 'OnTheBill', isPaid: false } },
+      },
+      include: {
+        client: { select: { id: true, fullName: true } },
+        orderDetails: true,
+        orderTransaction: true,
+      },
+      orderBy: { createdAT: 'asc' },
+    });
+  }
+
+  async findOpenTabOrdersByClient(
+    clientId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return client.order.findMany({
+      where: {
+        clientId,
+        orderTransaction: { some: { transactionType: 'OnTheBill', isPaid: false } },
+      },
+      orderBy: { createdAT: 'asc' },
+    });
+  }
+
+  async closeTabOrder(
+    orderId: string,
+    workDayId: string | null,
+    transactionType: Prisma.OrderTransactionUpdateManyMutationInput['transactionType'],
+    interestAmount: Prisma.Decimal,
+    tx: Prisma.TransactionClient,
+  ) {
+    await tx.orderTransaction.updateMany({
+      where: { orderId },
+      data: {
+        transactionType,
+        isPaid: true,
+        paidDate: new Date(),
+        interestAmount,
+        totalPrice: { increment: interestAmount },
+      },
+    });
+    return tx.order.update({
+      where: { id: orderId },
+      data: { orderStatus: 'Concluded', workDayId },
+    });
+  }
 }

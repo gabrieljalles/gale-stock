@@ -30,8 +30,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${roboto.variable}`}>
-        <div className="flex min-h-screen flex-1 flex-col items-start justify-center bg-background">
+      <body className={`${roboto.variable} overflow-hidden`}>
+        <div className="h-screen w-full bg-background">
           <AuthProvider>
             <ProductProvider>
               {children}

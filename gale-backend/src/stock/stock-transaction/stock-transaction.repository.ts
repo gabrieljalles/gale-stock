@@ -118,10 +118,22 @@ export class StockTransactionRepository {
     );
   }
 
+  async findProductNamesByIds(
+    productIds: string[],
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return client.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true },
+    });
+  }
+
   async createStockEntryDetails(
     details: Array<{
       stockTransactionId: string;
       productId: string;
+      productName: string;
       baseUnitCost: number;
       landedUnitCost: Decimal;
       totalProductCost: number;
@@ -164,7 +176,7 @@ export class StockTransactionRepository {
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx ?? this.prisma;
-    
+
     const result = await client.stockEntryDetail.aggregate({
       where: {
         productId,
@@ -176,5 +188,37 @@ export class StockTransactionRepository {
     });
 
     return result._sum.quantityOnStock || 0;
+  }
+
+  async findStockEntryDetailById(id: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return client.stockEntryDetail.findUnique({ where: { id } });
+  }
+
+  async updateStockEntryDetail(
+    id: string,
+    data: Partial<{ quantityOnStock: number; validityDate: Date }>,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return client.stockEntryDetail.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteLostEntriesByStockEntryDetailIds(
+    stockEntryDetailIds: string[],
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+
+    return client.lostEntry.deleteMany({
+      where: {
+        stockEntryDetailId: {
+          in: stockEntryDetailIds,
+        },
+      },
+    });
   }
 }

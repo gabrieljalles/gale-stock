@@ -158,8 +158,8 @@ const ProductPopup = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed left-0 top-0 z-50 flex h-full w-full items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-lg rounded-lg bg-white p-4 shadow-lg">
+    <div className="fixed left-0 top-0 z-50 flex h-full w-full items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-4 shadow-lg">
         <h2 className="mb-2 text-lg font-semibold">Selecione o Produto</h2>
         {loading && <p>Carregando produtos...</p>}
         {error && <p>Erro ao carregar produtos.</p>}
@@ -289,7 +289,7 @@ const ProductPopup = ({
         {/* {Calculo de custos} */}
         {costType !== "" && costValue > 0 && (
           <div className="mt-4">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div>
                 <p className="text-xs">Qtd:</p>
                 <p className="text-xs">{initialQuantity}</p>

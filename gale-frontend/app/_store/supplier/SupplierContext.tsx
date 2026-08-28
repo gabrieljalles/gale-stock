@@ -1,4 +1,4 @@
-import { getSuppliers } from "@/api/supplier";
+import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from "@/api/supplier";
 import {
   createContext,
   useContext,
@@ -14,8 +14,9 @@ interface SupplierContextType {
   loading: boolean;
   error: Error | null;
   refresh: () => void;
-  addSupplier: (supplier: SupplierProps) => void;
-  removeSupplier: (id: string) => void;
+  addSupplier: (supplier: Omit<SupplierProps, "id">) => Promise<SupplierProps>;
+  updateSupplier: (id: string, supplier: Omit<SupplierProps, "id">) => Promise<SupplierProps>;
+  removeSupplier: (id: string) => Promise<void>;
 }
 
 const SupplierContext = createContext<SupplierContextType>({
@@ -23,8 +24,9 @@ const SupplierContext = createContext<SupplierContextType>({
   loading: false,
   error: null,
   refresh: async () => {},
-  addSupplier: () => {},
-  removeSupplier: () => {},
+  addSupplier: async () => ({}) as SupplierProps,
+  updateSupplier: async () => ({}) as SupplierProps,
+  removeSupplier: async () => {},
 });
 
 export function SupplierProvider({ children }: { children: ReactNode }) {
@@ -52,12 +54,38 @@ export function SupplierProvider({ children }: { children: ReactNode }) {
     }
   }, [authLoading, user]);
 
-  const addSupplier = (s: SupplierProps) => {
-    setSuppliers((prev) => (prev ? [s, ...prev] : [s]));
+  const addSupplier = async (supplierData: Omit<SupplierProps, "id">) => {
+    try {
+      const newSupplier = await createSupplier(supplierData);
+      setSuppliers((prev) => [newSupplier, ...prev]);
+      return newSupplier;
+    } catch (error) {
+      setError(error as Error);
+      throw error;
+    }
   };
 
-  const removeSupplier = (id: string) => {
-    setSuppliers((prev) => (prev ? prev.filter((s) => s.id !== id) : []));
+  const updateSupplierFunc = async (id: string, supplierData: Omit<SupplierProps, "id">) => {
+    try {
+      const updatedSupplier = await updateSupplier(id, supplierData);
+      setSuppliers((prev) => 
+        prev.map((s) => (s.id === id ? updatedSupplier : s))
+      );
+      return updatedSupplier;
+    } catch (error) {
+      setError(error as Error);
+      throw error;
+    }
+  };
+
+  const removeSupplier = async (id: string) => {
+    try {
+      await deleteSupplier(id);
+      setSuppliers((prev) => prev.filter((s) => s.id !== id));
+    } catch (error) {
+      setError(error as Error);
+      throw error;
+    }
   };
 
   return (
@@ -68,6 +96,7 @@ export function SupplierProvider({ children }: { children: ReactNode }) {
         error,
         refresh: fetch,
         addSupplier,
+        updateSupplier: updateSupplierFunc,
         removeSupplier,
       }}
     >

@@ -1,0 +1,1 @@
+ALTER TABLE "OrderTransaction" ADD COLUMN "interestAmount" DECIMAL(10,4) NOT NULL DEFAULT 0;
