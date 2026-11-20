@@ -21,4 +21,19 @@ export class ReportsRepository {
       },
     });
   }
+
+  // Transações efetivamente recebidas, por forma de pagamento. Só entram
+  // as pagas: notinha em aberto ainda não é dinheiro no caixa.
+  // `workDayId` restringe ao dia de trabalho informado.
+  async groupPaidTransactionsByType(workDayId?: string) {
+    return this.prisma.orderTransaction.groupBy({
+      by: ['transactionType'],
+      where: {
+        isPaid: true,
+        ...(workDayId && { order: { workDayId } }),
+      },
+      _sum: { totalPrice: true, feeAmount: true },
+      _count: { _all: true },
+    });
+  }
 }

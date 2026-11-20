@@ -9,14 +9,15 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/_components/ui/drawer";
-import { CirclePlus, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { CirclePlus, Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { formatCep, isCompleteCep, lookupCep } from "@/api/cep";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import { useCatalog } from "@/_store/catalog/CatalogContext";
 import { CatalogItem } from "@/api/catalog";
 import { getSettings, SiteSettings } from "@/api/settings";
 import { createOrder } from "@/api/order";
-import { getClientsForTab, getAllClients, ClientForTab } from "@/api/user";
+import { getClientsForTab, getAllClients, ClientForTab, getClientAddresses, MyAddress } from "@/api/user";
 import { transactionTypes } from "@/_constants/transaction";
 import { useWorkDay } from "@/_store/workDay/WorkDayContext";
 
@@ -69,6 +70,10 @@ const NewSale = () => {
   const [deliveryClients, setDeliveryClients] = useState<ClientForTab[]>([]);
   const [deliveryClientId, setDeliveryClientId] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  // Endereços já cadastrados do cliente escolhido. "" no select significa
+  // "outro endereço", que libera os campos em branco pra digitar.
+  const [clientAddresses, setClientAddresses] = useState<MyAddress[]>([]);
+  const [selectedClientAddressId, setSelectedClientAddressId] = useState("");
   const [addressTypeAddress, setAddressTypeAddress] = useState(
     TYPE_ADDRESS_OPTIONS[0].value,
   );
@@ -77,9 +82,66 @@ const NewSale = () => {
   const [addressDistrict, setAddressDistrict] = useState("");
   const [addressComplement, setAddressComplement] = useState("");
   const [addressZipCode, setAddressZipCode] = useState("");
+  const [cepStatus, setCepStatus] = useState<
+    "idle" | "loading" | "found" | "notFound"
+  >("idle");
+
+  // Busca o CEP assim que os 8 dígitos são digitados. Achando, preenche
+  // rua/tipo/bairro; não achando, deixa tudo como está pra pessoa escrever.
+  const handleZipCodeChange = async (value: string) => {
+    const masked = formatCep(value);
+    setAddressZipCode(masked);
+
+    if (!isCompleteCep(masked)) {
+      setCepStatus("idle");
+      return;
+    }
+
+    setCepStatus("loading");
+    const result = await lookupCep(masked);
+
+    if (!result) {
+      setCepStatus("notFound");
+      return;
+    }
+
+    if (result.typeAddress) setAddressTypeAddress(result.typeAddress);
+    if (result.address) setAddressStreet(result.address);
+    if (result.district) setAddressDistrict(result.district);
+    setCepStatus("found");
+  };
 
   const isOnTheBill = transactionType === "OnTheBill";
   const isDelivery = deliveryType === "Delivery";
+
+  // Copia um endereço salvo pros campos do formulário. Eles seguem
+  // editáveis de propósito: dá pra ajustar o complemento de hoje sem
+  // alterar o cadastro do cliente.
+  const fillAddressFrom = (address: MyAddress) => {
+    setAddressTypeAddress(address.typeAddress);
+    setAddressStreet(address.address);
+    setAddressNumber(address.number);
+    setAddressDistrict(address.district);
+    setAddressComplement(address.complement ?? "");
+    setAddressZipCode(address.zipCode ?? "");
+    setCepStatus("idle");
+  };
+
+  const clearAddressFields = () => {
+    setAddressStreet("");
+    setAddressNumber("");
+    setAddressDistrict("");
+    setAddressComplement("");
+    setAddressZipCode("");
+    setCepStatus("idle");
+  };
+
+  const handleSelectClientAddress = (addressId: string) => {
+    setSelectedClientAddressId(addressId);
+    const chosen = clientAddresses.find((address) => address.id === addressId);
+    if (chosen) fillAddressFrom(chosen);
+    else clearAddressFields();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -108,6 +170,35 @@ const NewSale = () => {
       })
       .catch(() => toast.error("Erro ao carregar clientes."));
   }, [isDelivery, isAnonymousDelivery, deliveryClients, deliveryClientId]);
+
+  // Carrega os endereços do cliente escolhido e já seleciona o principal:
+  // na maioria das vezes é pra lá que a entrega vai, e o balcão não precisa
+  // redigitar nada.
+  useEffect(() => {
+    if (!isDelivery || isAnonymousDelivery || !deliveryClientId) {
+      setClientAddresses([]);
+      setSelectedClientAddressId("");
+      return;
+    }
+
+    getClientAddresses(deliveryClientId)
+      .then((addresses) => {
+        setClientAddresses(addresses);
+        const preferred =
+          addresses.find((address) => address.isPrimary) ?? addresses[0];
+        if (preferred) {
+          setSelectedClientAddressId(preferred.id);
+          fillAddressFrom(preferred);
+        } else {
+          setSelectedClientAddressId("");
+        }
+      })
+      .catch(() => {
+        // Sem endereços carregados sobra o preenchimento manual, que
+        // continua funcionando.
+        setClientAddresses([]);
+      });
+  }, [isDelivery, isAnonymousDelivery, deliveryClientId]);
 
   // Busca a lista de clientes quando escolhe Notinha (só na primeira vez;
   // depois fica em cache). Garante também que sempre exista um cliente
@@ -269,6 +360,8 @@ const NewSale = () => {
     setDeliveryType("InStore");
     setIsAnonymousDelivery(true);
     setDeliveryClientId("");
+    setClientAddresses([]);
+    setSelectedClientAddressId("");
     setRecipientName("");
     setAddressTypeAddress(TYPE_ADDRESS_OPTIONS[0].value);
     setAddressStreet("");
@@ -276,6 +369,7 @@ const NewSale = () => {
     setAddressDistrict("");
     setAddressComplement("");
     setAddressZipCode("");
+    setCepStatus("idle");
   };
 
   const handleCloseSale = () => {
@@ -454,20 +548,79 @@ const NewSale = () => {
                         Nenhum cliente cadastrado.
                       </p>
                     ) : (
-                      <select
-                        value={deliveryClientId}
-                        onChange={(e) => setDeliveryClientId(e.target.value)}
-                        className="h-8 w-full rounded-md border border-input bg-white px-2 text-xs"
-                      >
-                        {deliveryClients.map((client) => (
-                          <option key={client.id} value={client.id}>
-                            {client.fullName}
-                          </option>
-                        ))}
-                      </select>
+                      <>
+                        <select
+                          value={deliveryClientId}
+                          onChange={(e) => setDeliveryClientId(e.target.value)}
+                          className="h-8 w-full rounded-md border border-input bg-white px-2 text-xs"
+                        >
+                          {deliveryClients.map((client) => (
+                            <option key={client.id} value={client.id}>
+                              {client.fullName}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Endereços já cadastrados do cliente. Escolher um
+                            preenche os campos abaixo, que seguem editáveis
+                            pra ajustes pontuais. */}
+                        {clientAddresses.length > 0 ? (
+                          <select
+                            value={selectedClientAddressId}
+                            onChange={(e) =>
+                              handleSelectClientAddress(e.target.value)
+                            }
+                            className="h-8 w-full rounded-md border border-input bg-white px-2 text-xs"
+                          >
+                            {clientAddresses.map((address) => (
+                              <option key={address.id} value={address.id}>
+                                {address.isPrimary ? "★ " : ""}
+                                {TYPE_ADDRESS_OPTIONS.find(
+                                  (opt) => opt.value === address.typeAddress,
+                                )?.label ?? address.typeAddress}{" "}
+                                {address.address}, {address.number} —{" "}
+                                {address.district}
+                              </option>
+                            ))}
+                            <option value="">Outro endereço (digitar)</option>
+                          </select>
+                        ) : (
+                          <p className="text-[10px] text-gray-400">
+                            Esse cliente não tem endereço salvo — preencha
+                            abaixo.
+                          </p>
+                        )}
+                      </>
                     )}
                   </>
                 )}
+
+                {/* CEP primeiro: achando, já preenche rua e bairro */}
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    placeholder="CEP (opcional)"
+                    value={addressZipCode}
+                    onChange={(e) => handleZipCodeChange(e.target.value)}
+                    inputMode="numeric"
+                    className="h-8 w-28 text-xs"
+                  />
+                  {cepStatus === "loading" && (
+                    <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Buscando...
+                    </span>
+                  )}
+                  {cepStatus === "found" && (
+                    <span className="text-[10px] text-green-600">
+                      Endereço preenchido
+                    </span>
+                  )}
+                  {cepStatus === "notFound" && (
+                    <span className="text-[10px] text-gray-400">
+                      CEP não encontrado — preencha abaixo
+                    </span>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-3 gap-1.5">
                   <select
@@ -502,20 +655,12 @@ const NewSale = () => {
                     className="h-8 text-xs"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <Input
-                    placeholder="Complemento (opcional)"
-                    value={addressComplement}
-                    onChange={(e) => setAddressComplement(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    placeholder="CEP (opcional)"
-                    value={addressZipCode}
-                    onChange={(e) => setAddressZipCode(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
+                <Input
+                  placeholder="Complemento (opcional)"
+                  value={addressComplement}
+                  onChange={(e) => setAddressComplement(e.target.value)}
+                  className="h-8 text-xs"
+                />
               </div>
             )}
 

@@ -45,9 +45,20 @@ const LoginPage: React.FC = () => {
   //Efetuar login
   const onSubmit = async (data: LoginFormInputs) => {
     try {
-      await signin(data.email, data.password);
+      const loggedUser = await signin(data.email, data.password);
       toast.success("Logado com sucesso!");
-      router.push("/admin/stock");
+
+      // Veio de uma tela específica (ex: carrinho -> checkout)? Volta pra
+      // lá. Senão, cada papel cai onde faz sentido: equipe no painel,
+      // cliente na loja.
+      const redirect = searchParams.get("redirect");
+      if (redirect?.startsWith("/")) {
+        router.push(redirect);
+      } else if (["Admin", "Shopper"].includes(loggedUser.role)) {
+        router.push("/admin/resume");
+      } else {
+        router.push("/");
+      }
     } catch (err: any) {
       toast.error(
         err.response?.data?.message || err.message || "Falha de login",

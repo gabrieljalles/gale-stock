@@ -1,0 +1,1 @@
+ALTER TABLE "SiteSettings" ADD COLUMN "oneManArmyMode" BOOLEAN NOT NULL DEFAULT false;

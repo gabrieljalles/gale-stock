@@ -37,6 +37,13 @@ export class CreateUserDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  // Código do link de indicação (/register?ref=CODIGO). Opcional e sem
+  // validação de existência aqui: código errado ou expirado não pode
+  // impedir alguém de criar conta — só não gera vínculo.
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 export class CreateUserAddressDto {

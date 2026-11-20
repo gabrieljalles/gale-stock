@@ -4,10 +4,12 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["utfs.io"],
     remotePatterns: [
-      // site de imagem uploadthing
+      // Uploadthing serve cada app num subdomínio próprio de ufs.sh, e o
+      // curinga evita que uma troca de app/chave quebre todas as imagens
+      // (o next/image recusa host não listado e a foto simplesmente some).
       {
         protocol: "https",
-        hostname: "bfu8xmr6kg.ufs.sh",
+        hostname: "**.ufs.sh",
         port: "",
         pathname: "/f/**",
       },

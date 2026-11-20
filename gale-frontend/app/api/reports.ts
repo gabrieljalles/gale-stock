@@ -31,3 +31,34 @@ export const getProductMarginTrend = async (
   );
   return response.data;
 };
+
+export interface PaymentMethodSlice {
+  transactionType: string;
+  /** Bruto vendido nessa forma de pagamento. */
+  total: number;
+  /** Quanto a operadora ficou. */
+  fee: number;
+  /** total - fee. */
+  net: number;
+  orderCount: number;
+}
+
+/** Acumulado da loja, por forma de pagamento (Dashboard). */
+export const getSalesByPaymentMethod = async (): Promise<
+  PaymentMethodSlice[]
+> => {
+  const response = await requestWithAuth(() =>
+    api.get("/reports/payment-methods"),
+  );
+  return response.data;
+};
+
+/** Mesma quebra, só do dia de trabalho em aberto (Resumo). */
+export const getTodaySalesByPaymentMethod = async (): Promise<
+  PaymentMethodSlice[]
+> => {
+  const response = await requestWithAuth(() =>
+    api.get("/reports/payment-methods/today"),
+  );
+  return response.data;
+};

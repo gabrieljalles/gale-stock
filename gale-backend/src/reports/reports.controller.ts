@@ -37,6 +37,23 @@ export class ReportsController {
     );
   }
 
+  // Vendas recebidas por forma de pagamento (pizza do Dashboard).
+  // Sem filtro de período: é o acumulado da loja.
+  @Get('payment-methods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin')
+  getSalesByPaymentMethod() {
+    return this.service.getSalesByPaymentMethod();
+  }
+
+  // Mesma pizza, só do dia de trabalho em aberto (indicador do Resumo).
+  @Get('payment-methods/today')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin')
+  getTodaySalesByPaymentMethod() {
+    return this.service.getTodaySalesByPaymentMethod();
+  }
+
   private parseDays(days?: string): number {
     const parsed = Number(days);
     if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 365) return 30;

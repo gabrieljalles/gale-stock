@@ -6,6 +6,7 @@ import WorkDayMetricsChart from "../_components/WorkDayMetricsChart";
 import MarginTrendChart from "../_components/MarginTrendChart";
 import ProductMarginChart from "../_components/ProductMarginChart";
 import FinanceSummaryCards from "../_components/FinanceSummaryCards";
+import PaymentMethodsChart from "../_components/PaymentMethodsChart";
 
 const FinancePage = () => {
   return (
@@ -20,6 +21,9 @@ const FinancePage = () => {
         </div>
 
         <WorkDaysReport />
+
+        <hr />
+        <PaymentMethodsChart />
 
         <hr />
         <WorkDayMetricsChart />

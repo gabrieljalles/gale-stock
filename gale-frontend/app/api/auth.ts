@@ -20,6 +20,9 @@ interface RegisterData {
   cpfCNPJ: string;
   password: string;
   confirmPassword: string;
+  // Código do link de indicação (/register?ref=CODIGO). Código inválido é
+  // simplesmente ignorado pelo servidor — nunca impede o cadastro.
+  referralCode?: string;
 }
 
 interface UpdatePasswordData {

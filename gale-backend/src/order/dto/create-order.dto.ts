@@ -1,6 +1,6 @@
 import { DeliveryType, OrderSource, OrderStatus, TransactionType, TypeAddress } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, MinLength, MaxLength, IsNumber, IsDateString, IsArray, ValidateNested, IsEnum, IsInt } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength, IsNumber, IsDateString, IsArray, ValidateNested, IsEnum, IsInt, Min } from 'class-validator';
 
 export class CreateOrderDto {
     @IsEnum(DeliveryType)
@@ -42,6 +42,14 @@ export class CreateOrderTransactionDto {
   @IsOptional()
   @IsEnum(TransactionType)
   transactionType: TransactionType;
+
+  // Pontos que o cliente quer usar como desconto nesta venda. Quem valida
+  // saldo, mínimo e teto percentual é o PointsService, dentro da mesma
+  // transação da venda — o navegador só sugere um número.
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pointsToRedeem?: number;
 
 }
 

@@ -20,6 +20,14 @@ const config: Config = {
           "0%, 100%": { boxShadow: "0 0 20px 4px rgba(34,197,94,0.55)" },
           "50%": { boxShadow: "0 0 34px 10px rgba(34,197,94,0.85)" },
         },
+        // Rolo vertical entre dois textos empilhados: cada um fica parado
+        // um tempo e desliza pro próximo, como um letreiro de rolagem.
+        // O -50% assume exatamente 2 itens de altura igual.
+        textRoll: {
+          "0%, 45%": { transform: "translateY(0)" },
+          "50%, 95%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0)" },
+        },
       },
       colors: {
         background: "var(--color-bg)",
@@ -84,6 +92,7 @@ const config: Config = {
         float: "float 3s ease-in-out infinite",
         slowSpin: "spin 5s linear infinite",
         glowPulse: "glowPulse 2.2s ease-in-out infinite",
+        textRoll: "textRoll 5s ease-in-out infinite",
       },
       fontFamily: {
         sans: ['"Roboto"', "sans-serif"],

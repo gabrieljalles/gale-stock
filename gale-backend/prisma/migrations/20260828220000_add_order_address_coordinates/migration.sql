@@ -1,0 +1,3 @@
+ALTER TABLE "OrderAddress" ADD COLUMN "latitude" DOUBLE PRECISION;
+ALTER TABLE "OrderAddress" ADD COLUMN "longitude" DOUBLE PRECISION;
+ALTER TABLE "OrderAddress" ADD COLUMN "geocodedAt" TIMESTAMP(3);

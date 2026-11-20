@@ -298,8 +298,17 @@ const CatalogProductsTab = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredItems.map((item) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {filteredItems.map((item) => {
+          const current = getCurrentPrice(item);
+          // Margem = lucro / preço de venda (mesma definição usada nos
+          // gráficos de margem do Financeiro), não markup (lucro / custo).
+          const marginPercent =
+            current && item.lastPurchaseCost && current.price > 0
+              ? ((current.price - item.lastPurchaseCost) / current.price) * 100
+              : null;
+
+          return (
             <Card
               key={item.id}
               className={`flex flex-col overflow-hidden py-0 transition-shadow hover:shadow-lg ${
@@ -363,12 +372,27 @@ const CatalogProductsTab = () => {
                 </div>
 
                 {/* Conteúdo principal */}
-                <div className="flex flex-1 flex-col gap-2 px-3 pb-2 pt-3">
+                <div className="flex flex-1 flex-col gap-1.5 px-2.5 pb-2 pt-2.5">
                   {/* Nome e categoria */}
                   <div>
-                    <h3 className="line-clamp-2 text-sm font-semibold text-gray-900">
-                      {item.product.name}
-                    </h3>
+                    <div className="flex items-start justify-between gap-1">
+                      <h3 className="line-clamp-2 text-sm font-semibold text-gray-900">
+                        {item.product.name}
+                      </h3>
+                      {marginPercent != null && (
+                        <span
+                          title="Margem sobre o preço de venda"
+                          className={`flex-shrink-0 text-[10px] ${
+                            marginPercent >= 0
+                              ? "text-green-600/50"
+                              : "text-red-600/50"
+                          }`}
+                        >
+                          {marginPercent >= 0 ? "+" : ""}
+                          {marginPercent.toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-600">
                       {item.product.category} • {item.product.size}
                       {item.product.sizeType}
@@ -387,10 +411,7 @@ const CatalogProductsTab = () => {
                   </div>
 
                   {/* Preço praticado agora */}
-                  {(() => {
-                    const current = getCurrentPrice(item);
-                    if (!current) return null;
-                    return (
+                  {current && (
                       <div className="flex items-center justify-between rounded-md bg-blue-50 px-2 py-1.5">
                         <span className="text-xs font-medium text-blue-900">
                           Preço agora
@@ -406,8 +427,7 @@ const CatalogProductsTab = () => {
                           {formatCurrency(current.price)}
                         </span>
                       </div>
-                    );
-                  })()}
+                  )}
 
                   {/* Preços */}
                   <div className="space-y-1">
@@ -482,7 +502,8 @@ const CatalogProductsTab = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
       )}
 
