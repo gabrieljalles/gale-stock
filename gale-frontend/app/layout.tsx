@@ -30,8 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${roboto.variable} overflow-hidden`}>
-        <div className="h-screen w-full bg-background">
+      {/* Sem overflow-hidden aqui: ele travava a rolagem de toda página
+          que cresce além da tela (checkout, minha conta, vitrine). As
+          telas do admin não dependem disso — cada uma monta o próprio
+          container com h-screen e scroll interno. */}
+      <body className={roboto.variable}>
+        <div className="min-h-screen w-full bg-background">
           <AuthProvider>
             <ProductProvider>
               {children}

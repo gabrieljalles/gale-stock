@@ -41,7 +41,7 @@ const LowStockWarning = () => {
 
   return (
     <div
-      className="flex w-full flex-shrink-0 flex-col rounded-md border border-orange-200 bg-orange-50 p-3 lg:w-64"
+      className="flex w-full flex-shrink-0 flex-col rounded-md border border-orange-200 bg-orange-50 p-3 lg:w-40"
       style={{ height: 208 }}
     >
       <div className="mb-2 flex flex-shrink-0 items-center gap-1.5 text-xs font-semibold text-orange-700">

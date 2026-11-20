@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/register/registerSchema";
@@ -34,12 +35,13 @@ import { formatPhone } from "@/_utils/format-phone";
 import { formatCpfCNPJ } from "@/_utils/format-cpf-cnpj";
 import TermsDialog from "./_components/terms-dialog";
 import RegistrationSuccessDialog from "./_components/success-registration-dialog";
-import { IterationCw } from "lucide-react";
+import { IterationCw, Share2 } from "lucide-react";
 import axios from "axios";
+import { describeReferralCode } from "@/api/points";
 
 type RegisterFormInputs = z.infer<typeof registerSchema>;
 
-const RegisterPage: React.FC = () => {
+const RegisterForm: React.FC = () => {
   const {
     register,
     handleSubmit,
@@ -63,12 +65,27 @@ const RegisterPage: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
 
+  // Vínculo de indicação: o código vem na URL e acompanha o cadastro. Ele
+  // é gravado uma vez e nunca mais muda — é o que define quem recebe
+  // pontos da rede dessa pessoa.
+  const referralCode = useSearchParams().get("ref")?.trim() || null;
+  const [sponsorName, setSponsorName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!referralCode) return;
+    describeReferralCode(referralCode)
+      .then((sponsor) => setSponsorName(sponsor?.firstName ?? null))
+      // Código inválido não trava nada: o cadastro segue sem vínculo.
+      .catch(() => setSponsorName(null));
+  }, [referralCode]);
+
   const onSubmit = async (data: RegisterFormInputs) => {
     setLoading(true);
     try {
       const payload = {
         ...data,
         dateOfBirth: new Date(data.dateOfBirth).toISOString(),
+        ...(referralCode ? { referralCode } : {}),
       };
 
       const response = await apiRegister(payload);
@@ -97,13 +114,45 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-secondary">
-      <div className="flex w-full max-w-[400px] flex-col justify-center rounded-2xl bg-white p-4 shadow-lg">
-        <LogoComponent />
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+    // min-h-screen (e não h-screen): o container cresce junto com o
+    // formulário em vez de cortá-lo. Com altura fixa + items-center, um
+    // cartão mais alto que a tela tem o topo empurrado pra fora da
+    // viewport, e não há como rolar até ele.
+    <div className="flex min-h-screen w-full items-center justify-center bg-secondary px-4 py-4">
+      <div className="flex w-full max-w-[400px] flex-col justify-center rounded-2xl bg-white p-3 shadow-lg">
+        <LogoComponent size={40} />
+
+        {referralCode && (
+          <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5">
+            <Share2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+            <p className="text-[11px] leading-snug text-amber-900">
+              {sponsorName ? (
+                <>
+                  <strong>{sponsorName}</strong> te convidou para o Galé.
+                </>
+              ) : (
+                <>Você chegou por um convite.</>
+              )}{" "}
+              Criando sua conta por aqui, vocês dois passam a{" "}
+              <strong>acumular pontos</strong> nas compras.{" "}
+              <Link href="/pontos" target="_blank" className="underline">
+                Como funciona
+              </Link>
+            </p>
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          // Campos e respiro reduzidos só neste formulário: são 8 campos
+          // e o objetivo é caber na tela sem rolagem. Mexer no componente
+          // Input (h-9 padrão) afetaria todas as telas do sistema.
+          // O gênero é um Select, não um input, por isso a segunda regra.
+          className="space-y-1.5 [&_input]:h-7 [&_input]:text-xs [&_[data-slot=select-trigger]]:h-7 [&_[data-slot=select-trigger]]:text-xs"
+        >
           {/* Email */}
           <div>
-            <label className="mb-0.5 block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               Email
             </label>
             <Input
@@ -112,7 +161,7 @@ const RegisterPage: React.FC = () => {
               {...register("email")}
             />
             {errors.email && (
-              <p className="mt-0.5 text-xs text-red-500">
+              <p className="mt-0.5 text-[11px] text-red-500">
                 {errors.email.message}
               </p>
             )}
@@ -120,7 +169,7 @@ const RegisterPage: React.FC = () => {
 
           {/* CPF/CNPJ */}
           <div>
-            <label className="mb-0.5block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               CPF/CNPJ{" "}
               <span className="text-[10px] text-gray-500">*Apenas números</span>
             </label>
@@ -148,7 +197,7 @@ const RegisterPage: React.FC = () => {
               )}
             />
             {errors.cpfCNPJ && (
-              <p className="mb-0.5 text-xs text-red-500">
+              <p className="mb-0.5 text-[11px] text-red-500">
                 {errors.cpfCNPJ.message}
               </p>
             )}
@@ -156,7 +205,7 @@ const RegisterPage: React.FC = () => {
 
           {/* Nome Completo */}
           <div>
-            <label className="mb-0.5 block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               Nome completo
             </label>
             <Input
@@ -165,7 +214,7 @@ const RegisterPage: React.FC = () => {
               {...register("fullName")}
             />
             {errors.fullName && (
-              <p className="mb-0.5 text-xs text-red-500">
+              <p className="mb-0.5 text-[11px] text-red-500">
                 {errors.fullName.message}
               </p>
             )}
@@ -173,7 +222,7 @@ const RegisterPage: React.FC = () => {
 
           {/*Data de nascimento*/}
           <div>
-            <label className="mb-0.5 block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               Data de Nascimento
             </label>
             <Input
@@ -183,7 +232,7 @@ const RegisterPage: React.FC = () => {
               className="w-full rounded border border-gray-300 p-2 text-sm focus:border-primary focus:ring-primary"
             />
             {errors.dateOfBirth && (
-              <p className="mb-0.5 text-xs text-red-500">
+              <p className="mb-0.5 text-[11px] text-red-500">
                 {errors.dateOfBirth.message}
               </p>
             )}
@@ -191,7 +240,7 @@ const RegisterPage: React.FC = () => {
 
           {/* Genero */}
           <div>
-            <label className="mb-0.5 block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               Gênero
             </label>
             <Controller
@@ -226,7 +275,7 @@ const RegisterPage: React.FC = () => {
               )}
             />
             {errors.gender && (
-              <p className="mb-0.5 text-xs text-red-500">
+              <p className="mb-0.5 text-[11px] text-red-500">
                 {errors.gender.message}
               </p>
             )}
@@ -234,7 +283,7 @@ const RegisterPage: React.FC = () => {
 
           {/* Telefone */}
           <div>
-            <label className="mb-0.5 block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               Telefone para contato
             </label>
             <Controller
@@ -254,7 +303,7 @@ const RegisterPage: React.FC = () => {
               )}
             />
             {errors.cellPhone && (
-              <p className="mb-0.5 text-xs text-red-500">
+              <p className="mb-0.5 text-[11px] text-red-500">
                 {errors.cellPhone.message}
               </p>
             )}
@@ -262,7 +311,7 @@ const RegisterPage: React.FC = () => {
 
           {/* Senha */}
           <div>
-            <label className="mb-0.5 block text-[12px] font-medium">
+            <label className="mb-0 block text-[11px] font-medium">
               Senha
             </label>
             <Input
@@ -271,7 +320,7 @@ const RegisterPage: React.FC = () => {
               {...register("password")}
             />
             {errors.password && (
-              <p className="mt-0.5 text-xs text-red-500">
+              <p className="mt-0.5 text-[11px] text-red-500">
                 {errors.password.message}
               </p>
             )}
@@ -285,7 +334,7 @@ const RegisterPage: React.FC = () => {
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
-              <p className="mt-0.5 text-xs text-red-500">
+              <p className="mt-0.5 text-[11px] text-red-500">
                 {errors.confirmPassword.message}
               </p>
             )}
@@ -306,7 +355,7 @@ const RegisterPage: React.FC = () => {
           {/* Submit só se termos aceitos */}
           <Button
             type="submit"
-            className="mt-12 w-full text-white hover:bg-secondary hover:text-primary"
+            className="mt-3 h-8 w-full text-white hover:bg-secondary hover:text-primary"
             disabled={isSubmitting || !acceptedTerms}
           >
             {loading ? <IterationCw className="animate-spin" /> : "Registrar"}
@@ -321,7 +370,7 @@ const RegisterPage: React.FC = () => {
           />
 
           {/* Volta para o login */}
-          <div className="mt-8 text-center font-extralight">
+          <div className="mt-3 text-center font-extralight">
             <span className="text-sm font-thin text-gray-500">
               Já possui conta?{" "}
               <Button asChild className="bg-transparent p-0">
@@ -339,5 +388,16 @@ const RegisterPage: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * useSearchParams exige uma fronteira de Suspense pra página não perder a
+ * renderização estática — o convite chega pela URL, então não há como
+ * fugir do hook aqui.
+ */
+const RegisterPage: React.FC = () => (
+  <Suspense fallback={null}>
+    <RegisterForm />
+  </Suspense>
+);
 
 export default RegisterPage;

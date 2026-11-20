@@ -6,10 +6,12 @@ import { CatalogModule } from 'src/catalog/catalog.module';
 import { UserModule } from 'src/user/user.module';
 import { SettingsModule } from 'src/settings/settings.module';
 import { WorkDayModule } from 'src/work-day/work-day.module';
+import { GeocodingService } from './geocoding.service';
+import { PointsModule } from 'src/points/points.module';
 
 @Module({
-  imports: [CatalogModule, UserModule, SettingsModule, WorkDayModule],
+  imports: [CatalogModule, UserModule, SettingsModule, WorkDayModule, PointsModule],
   controllers: [OrderController],
-  providers: [OrderRepository, OrderService],
+  providers: [OrderRepository, OrderService, GeocodingService],
 })
 export class OrderModule {}

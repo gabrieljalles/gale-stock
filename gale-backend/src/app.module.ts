@@ -22,6 +22,8 @@ import { join } from 'path';
 import { SettingsModule } from './settings/settings.module';
 import { WorkDayModule } from './work-day/work-day.module';
 import { ReportsModule } from './reports/reports.module';
+import { FinanceModule } from './finance/finance.module';
+import { PointsModule } from './points/points.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -58,6 +60,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     SettingsModule,
     WorkDayModule,
     ReportsModule,
+    FinanceModule,
+    PointsModule,
   ],
   controllers: [AppController],
   providers: [

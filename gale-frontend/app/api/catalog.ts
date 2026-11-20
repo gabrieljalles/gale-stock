@@ -27,6 +27,8 @@ export interface CatalogItem {
   };
   // Quantidade total em estoque (vem do agregado de StockEntryDetail)
   totalStock?: number;
+  // Custo (landedUnitCost) do lote de estoque comprado mais recentemente
+  lastPurchaseCost?: number;
 }
 
 export interface UpdateCatalogPriceDto {
@@ -45,13 +47,17 @@ export const getCatalogItems = async (): Promise<CatalogItem[]> => {
   return await requestWithAuth(async () => {
     const response = await api.get('/catalog');
     
-    // Calcular o estoque total para cada item
+    // Calcular o estoque total e o custo da última compra para cada item
+    // (stockEntries já vem ordenado do mais recente para o mais antigo).
     const itemsWithStock = response.data.map((item: any) => ({
       ...item,
       totalStock: item.product.stockEntries.reduce(
         (total: number, entry: any) => total + entry.quantityOnStock,
         0
       ),
+      lastPurchaseCost: item.product.stockEntries[0]
+        ? Number(item.product.stockEntries[0].landedUnitCost)
+        : undefined,
     }));
     
     return itemsWithStock;

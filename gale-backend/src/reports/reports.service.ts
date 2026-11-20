@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ReportsRepository } from './reports.repository';
+import { WorkDayService } from 'src/work-day/work-day.service';
 
 const toDateKey = (date: Date): string => date.toISOString().slice(0, 10);
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly repository: ReportsRepository) {}
+  constructor(
+    private readonly repository: ReportsRepository,
+    private readonly workDayService: WorkDayService,
+  ) {}
 
   private sinceDate(days: number): Date {
     const since = new Date();
@@ -61,5 +65,39 @@ export class ReportsService {
     );
 
     return this.groupByDay(rows);
+  }
+
+  // Chart 4: quanto entrou por forma de pagamento (pizza).
+  //
+  // `total` é o bruto vendido; `net` é o que sobra depois da taxa da
+  // maquininha. Formas sem taxa (dinheiro) têm os dois iguais, e é
+  // justamente a comparação que mostra o custo de cada meio.
+  async getSalesByPaymentMethod(workDayId?: string) {
+    const rows = await this.repository.groupPaidTransactionsByType(workDayId);
+
+    return rows
+      .filter((row) => row.transactionType != null)
+      .map((row) => {
+        const total = Number(row._sum.totalPrice ?? 0);
+        const fee = Number(row._sum.feeAmount ?? 0);
+
+        return {
+          transactionType: row.transactionType as string,
+          total,
+          fee,
+          net: total - fee,
+          orderCount: row._count._all,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+  }
+
+  // Mesma pizza, recortada no dia de trabalho aberto (indicador do Resumo).
+  // Loja fechada não tem dia aberto — devolve vazio em vez de somar tudo,
+  // que é o que aconteceria se o filtro simplesmente sumisse.
+  async getTodaySalesByPaymentMethod() {
+    const workDayId = await this.workDayService.findOpenWorkDayId();
+    if (!workDayId) return [];
+    return this.getSalesByPaymentMethod(workDayId);
   }
 }

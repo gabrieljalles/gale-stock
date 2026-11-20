@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
+import { AuthContext } from "@/_store/auth/AuthContext";
 import { Receipt, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
@@ -49,6 +50,10 @@ const getAgeBorderClass = (days: number): string => {
 
 const OpenTabsList = () => {
   const { openTabs, refresh } = useWorkDay();
+  const { user } = useContext(AuthContext);
+  // Fechar notinha é exclusivo do Admin (mesma regra do backend); pro
+  // Vendedor a lista continua visível, só sem o botão que daria 403.
+  const canCloseTabs = user?.role === "Admin";
   const [expandedClientId, setExpandedClientId] = useState<string | null>(
     null,
   );
@@ -97,18 +102,20 @@ const OpenTabsList = () => {
   };
 
   return (
-    <div className="w-full flex-shrink-0 rounded-md border border-blue-200 bg-blue-50 p-3 lg:w-64">
-      <div className="mb-2 flex items-center justify-between gap-1.5 text-xs font-semibold text-blue-700">
-        <span className="flex items-center gap-1.5">
-          <Receipt className="h-3.5 w-3.5" />
-          Notinhas em aberto ({openTabs.length})
+    <div className="flex h-full w-full flex-shrink-0 flex-col rounded-md border border-blue-200 bg-blue-50 p-3 lg:w-52">
+      <div className="mb-2 flex flex-shrink-0 items-center gap-1 text-[10px] font-semibold text-blue-700">
+        <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
+          <Receipt className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate">
+            Notinhas em aberto ({openTabs.length})
+          </span>
         </span>
-        <span>
+        <span className="flex-shrink-0">
           {formatCurrency(openTabs.reduce((sum, tab) => sum + tab.total, 0))}
         </span>
       </div>
 
-      <div className="max-h-96 space-y-1.5 overflow-y-auto">
+      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
         {sortedTabs.map((tab) => {
           const isExpanded = expandedClientId === tab.clientId;
           const isClosing = closingClientId === tab.clientId;
@@ -136,14 +143,20 @@ const OpenTabsList = () => {
               </p>
 
               <div className="mt-1.5 flex items-center gap-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-6 flex-1 bg-black text-[11px] text-white hover:bg-green-600"
-                  onClick={() => handleStartClose(tab.clientId)}
-                >
-                  Fechar conta
-                </Button>
+                {canCloseTabs ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-6 flex-1 bg-black text-[11px] text-white hover:bg-green-600"
+                    onClick={() => handleStartClose(tab.clientId)}
+                  >
+                    Fechar conta
+                  </Button>
+                ) : (
+                  <span className="flex-1 text-[10px] text-gray-400">
+                    Só o admin fecha
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() =>

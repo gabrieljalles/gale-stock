@@ -9,40 +9,68 @@ datasource db {
 
 // Configurações gerais do site. Linha única (id fixo = 1).
 model SiteSettings {
-  id                      Int      @id @default(1)
-  storeOpen               Boolean  @default(true) // Liga/desliga manualmente se a loja aceita pedidos agora
-  autoCloseEnabled        Boolean  @default(false) // Se true, fecha a loja automaticamente para usuários comuns após storeCloseHour
-  storeCloseHour          Int      @default(22) // Hora (0-23) em que a loja fecha automaticamente
-  nightPriceEnabled       Boolean  @default(true) // Se falso, o preço noturno nunca é aplicado
-  nightPriceStartHour     Int      @default(23) // Hora (0-23) em que o preço noturno começa a valer
-  nightPriceEndHour       Int      @default(7) // Hora (0-23) em que o preço noturno deixa de valer
-  nightPriceMarkupPercent Decimal  @default(5) @db.Decimal(5, 2) // % de acréscimo no preço noturno (padrão 5%)
-  ifoodMarkupPercent      Decimal  @default(27) @db.Decimal(5, 2) // % de comissão do iFood embutida no preço (padrão 27%)
-  freightPrice            Decimal  @default(5) @db.Decimal(10, 2) // Valor fixo do frete para entrega
-  deliveryEnabled         Boolean  @default(true) // Se falso, omite a opção de delivery na hora da venda
+  id                  Int     @id @default(1)
+  storeOpen           Boolean @default(true) // Liga/desliga manualmente se a loja aceita pedidos agora
+  // Abertura/fechamento automáticos seguindo a grade semanal (StoreSchedule).
+  // Desligado, quem abre e fecha é o botão manual em Configurações.
+  autoScheduleEnabled Boolean @default(false)
+
+  // Intervenção manual por cima da grade, pra dar autonomia total ao Admin:
+  // fecha num dia de funcionamento normal, ou abre num feriado. Expira
+  // sozinha em overrideUntil (a próxima virada da grade), pra ninguém
+  // esquecer a loja travada.
+  storeOverride           StoreOverride?
+  overrideUntil           DateTime?
+  nightPriceEnabled       Boolean        @default(true) // Se falso, o preço noturno nunca é aplicado
+  nightPriceStartHour     Int            @default(23) // Hora (0-23) em que o preço noturno começa a valer
+  nightPriceEndHour       Int            @default(7) // Hora (0-23) em que o preço noturno deixa de valer
+  nightPriceMarkupPercent Decimal        @default(5) @db.Decimal(5, 2) // % de acréscimo no preço noturno (padrão 5%)
+  ifoodMarkupPercent      Decimal        @default(27) @db.Decimal(5, 2) // % de comissão do iFood embutida no preço (padrão 27%)
+  freightPrice            Decimal        @default(5) @db.Decimal(10, 2) // Valor fixo do frete para entrega
+  deliveryEnabled         Boolean        @default(true) // Se falso, omite a opção de delivery na hora da venda
+  oneManArmyMode          Boolean        @default(false) // "Exército de um homem só": pré-seleciona o Admin como motoboy no Kanban de pedidos
+
+  // Cidade/UF da loja. Usada pra centralizar o mapa de entregas e pra
+  // completar os endereços dos pedidos ao montar rotas no Google Maps
+  // (os endereços são salvos só com rua/número/bairro).
+  city  String @default("Ituiutaba")
+  state String @default("MG")
 
   // Taxas cobradas pela maquininha/operadora em cima do valor da venda.
-  // Usadas para descontar do faturamento o quanto realmente entrou no caixa
-  // (ainda não aplicado na venda em si, só disponível aqui por enquanto).
-  creditCardFeePercent    Decimal  @default(0) @db.Decimal(5, 2)
-  debitCardFeePercent     Decimal  @default(0) @db.Decimal(5, 2)
-  pixFeePercent           Decimal  @default(0) @db.Decimal(5, 2)
+  // Aplicadas na venda: ao registrar o pagamento, a alíquota vigente é
+  // copiada para OrderTransaction.feePercent e descontada do total.
+  creditCardFeePercent Decimal @default(0) @db.Decimal(5, 2)
+  debitCardFeePercent  Decimal @default(0) @db.Decimal(5, 2)
+  pixFeePercent        Decimal @default(0) @db.Decimal(5, 2)
 
-  updatedAt               DateTime @updatedAt
+  // Simples Nacional. Desligado, o imposto sobre vendas fica zerado na DRE.
+  // Ligado, usa os dois valores da faixa do anexo (alíquota nominal e
+  // parcela a deduzir) para calcular a alíquota efetiva sobre a RBT12.
+  // Só entra na apuração mensal, nunca na venda individual.
+  // Teto padrão de notinha por cliente. Vale pra quem não tem limite
+  // próprio (User.onTheBillLimit nulo) — assim dá pra subir o padrão da
+  // loja sem mexer em cada pessoa.
+  defaultOnTheBillLimit Decimal @default(200) @db.Decimal(10, 2)
+
+  simplesNacionalEnabled Boolean @default(false)
+  taxPercent             Decimal @default(0) @db.Decimal(5, 2)
+  taxDeduction           Decimal @default(0) @db.Decimal(12, 2)
+
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id           String              @id
-  name         String @unique
-  barCode      String? @unique
+  id           String             @id
+  name         String             @unique
+  barCode      String?            @unique
   description  String?
   category     Category
   sizeType     SizeType
   pack         Int
   size         String
   imgUrl       String
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   catalog      Catalog?
   LostEntry    LostEntry[]
   stockEntries StockEntryDetail[]
@@ -68,10 +96,10 @@ model StockTransaction {
   numberPayments    Int
   nfeAccessKey      String?
   firstPaymentDate  DateTime?
-  totalProductCost  Decimal @db.Decimal(10,4)
-  freightCost Decimal @db.Decimal(10,4)
-  feeCost Decimal     @db.Decimal(10,4)
-  totalCost         Decimal @db.Decimal(10,4)
+  totalProductCost  Decimal                       @db.Decimal(10, 4)
+  freightCost       Decimal                       @db.Decimal(10, 4)
+  feeCost           Decimal                       @db.Decimal(10, 4)
+  totalCost         Decimal                       @db.Decimal(10, 4)
   statusCheckout    String
   createdAt         DateTime                      @default(now())
   updatedAt         DateTime                      @updatedAt
@@ -86,87 +114,87 @@ model StockTransactionInstallment {
   installmentNumber  Int
   dueDate            DateTime
   paidDate           DateTime?
-  fragmentCost      Decimal @db.Decimal(10,4)
+  fragmentCost       Decimal          @db.Decimal(10, 4)
   transaction        StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
 }
 
 model StockEntryDetail {
-  id               String           @id @default(cuid())
-  stockTransactionId    String
-  productId        String
-  productName      String // Nome do produto no momento da compra (não muda se o produto for editado depois)
-  baseUnitCost Decimal @db.Decimal(10,4)
-  landedUnitCost Decimal @db.Decimal(10,4)
-  initialQuantity         Int
-  quantityOnStock         Int
-  totalProductCost Decimal @db.Decimal(10,4)
-  validityDate     DateTime
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  
+  id                 String   @id @default(cuid())
+  stockTransactionId String
+  productId          String
+  productName        String // Nome do produto no momento da compra (não muda se o produto for editado depois)
+  baseUnitCost       Decimal  @db.Decimal(10, 4)
+  landedUnitCost     Decimal  @db.Decimal(10, 4)
+  initialQuantity    Int
+  quantityOnStock    Int
+  totalProductCost   Decimal  @db.Decimal(10, 4)
+  validityDate       DateTime
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
   product          Product          @relation(fields: [productId], references: [id])
   stockTransaction StockTransaction @relation(fields: [stockTransactionId], references: [id], onDelete: Cascade)
 }
 
 model LostEntry {
   //Adicionar quem adicionou essa perda no futuro.
-  id         String     @id @default(cuid())
-  productId  String
-  productName String // Nome do produto no momento da perda (não muda se o produto for editado depois)
+  id                 String     @id @default(cuid())
+  productId          String
+  productName        String // Nome do produto no momento da perda (não muda se o produto for editado depois)
   stockEntryDetailId String
-  quantity   Int
-  reasonLoss ReasonLoss
-  note       String?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  product    Product    @relation(fields: [productId], references: [id])
+  quantity           Int
+  reasonLoss         ReasonLoss
+  note               String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  product            Product    @relation(fields: [productId], references: [id])
 }
 
 model Catalog {
-  id                      String   @id
-  consumerIfoodPrice      Decimal? @db.Decimal(10,4) // Preço de mercado /0,80
-  consumerNightPrice      Decimal? @db.Decimal(10,4) // Preço de mercado /0,95
-  consumerPrice           Decimal? @db.Decimal(10,4) // Preço de mercado
-  discountPackPrice       Decimal? @db.Decimal(10,4) // (Preço de mercado - liquidation price)*0,6 + liquidation price
-  liquidationPrice        Decimal? @db.Decimal(10,4) //Custo de aquisição (TAXA + FRETE) dividido por   
-  isLiquidation           Boolean  @default(false) 
+  id                 String   @id
+  consumerIfoodPrice Decimal? @db.Decimal(10, 4) // Preço de mercado /0,80
+  consumerNightPrice Decimal? @db.Decimal(10, 4) // Preço de mercado /0,95
+  consumerPrice      Decimal? @db.Decimal(10, 4) // Preço de mercado
+  discountPackPrice  Decimal? @db.Decimal(10, 4) // (Preço de mercado - liquidation price)*0,6 + liquidation price
+  liquidationPrice   Decimal? @db.Decimal(10, 4) //Custo de aquisição (TAXA + FRETE) dividido por   
+  isLiquidation      Boolean  @default(false)
 
-  packageDiscountAmount   Int?
-  wholesaleEnabled        Boolean  @default(true) // Liga/desliga o preço de atacado sem apagar os valores configurados
-  available               Boolean  @default(false)
+  packageDiscountAmount Int?
+  wholesaleEnabled      Boolean @default(true) // Liga/desliga o preço de atacado sem apagar os valores configurados
+  available             Boolean @default(false)
 
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  
-  product                 Product  @relation(fields: [id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product         Product           @relation(fields: [id], references: [id], onDelete: Cascade)
   discountCatalog DiscountCatalog[]
-  orderDetails OrderDetail[]
+  orderDetails    OrderDetail[]
 }
 
 model DiscountCatalog {
-  id String @id @default(cuid())
-  productId String
-  initialDate DateTime 
-  finalDate DateTime
-  catalog Catalog @relation(fields:[productId], references: [id])
+  id          String   @id @default(cuid())
+  productId   String
+  initialDate DateTime
+  finalDate   DateTime
+  catalog     Catalog  @relation(fields: [productId], references: [id])
 }
 
 model Order {
-  id String @id @default(cuid())
-  deliveryType DeliveryType @default(InStore)
-  orderSource OrderSource?
-  clientId String?
+  id            String       @id @default(cuid())
+  deliveryType  DeliveryType @default(InStore)
+  orderSource   OrderSource?
+  clientId      String?
   deliveryManId String?
-  workDayId String? // Dia de trabalho ao qual essa venda pertence (null = ainda não atribuída, loja fechada)
-  orderStatus OrderStatus @default(Confirmed)
-  createdAT DateTime @default(now())
-  updateAt DateTime @updatedAt
+  workDayId     String? // Dia de trabalho ao qual essa venda pertence (null = ainda não atribuída, loja fechada)
+  orderStatus   OrderStatus  @default(Confirmed)
+  createdAT     DateTime     @default(now())
+  updateAt      DateTime     @updatedAt
 
-  client User? @relation("ClientOrders", fields: [clientId], references: [id])
-  deliveryMan User? @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
-  workDay WorkDay? @relation(fields: [workDayId], references: [id])
-  orderAddress OrderAddress?
-  orderDetails OrderDetail[]
+  client           User?              @relation("ClientOrders", fields: [clientId], references: [id])
+  deliveryMan      User?              @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
+  workDay          WorkDay?           @relation(fields: [workDayId], references: [id])
+  orderAddress     OrderAddress?
+  orderDetails     OrderDetail[]
   orderTransaction OrderTransaction[]
 }
 
@@ -176,92 +204,144 @@ model Order {
 // ficam com workDayId nulo até a loja abrir de novo, quando são
 // resgatadas para o novo dia (ver WorkDayService.openStore).
 model WorkDay {
-  id        String    @id @default(cuid())
-  openedAt  DateTime  @default(now())
-  closedAt  DateTime?
-  openedBy  String? // id do Admin que abriu (null = automático/desconhecido)
-  closedBy  String? // id do Admin que fechou (null = fechamento automático)
+  id       String    @id @default(cuid())
+  openedAt DateTime  @default(now())
+  closedAt DateTime?
+  openedBy String? // id do Admin que abriu (null = automático/desconhecido)
+  closedBy String? // id do Admin que fechou (null = fechamento automático)
 
-  orders    Order[]
+  orders Order[]
 }
 
-model OrderDetail{
-  id String @id @default(cuid())
-  orderId String
-  productId String
+model OrderDetail {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
   productName String // Nome do produto no momento da venda (não muda se o produto for editado depois)
-  quantity Int
-  unityPrice Decimal @db.Decimal(10,4)
-  totalPrice Decimal @db.Decimal(10,4)
-  totalCost Decimal? @db.Decimal(10,4) // Custo (landedUnitCost) dos lotes de estoque efetivamente baixados (FIFO) nessa venda; usado pra calcular lucro
+  quantity    Int
+  unityPrice  Decimal  @db.Decimal(10, 4)
+  totalPrice  Decimal  @db.Decimal(10, 4)
+  totalCost   Decimal? @db.Decimal(10, 4) // Custo (landedUnitCost) dos lotes de estoque efetivamente baixados (FIFO) nessa venda; usado pra calcular lucro
+  checked     Boolean  @default(false) // Checklist de separação (Kanban de pedidos) — marcado quando o item foi conferido/separado
 
-  catalog Catalog @relation(fields:[productId], references: [id])
-  order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
+  catalog Catalog @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
-model OrderTransaction{
-  id String @id @default(cuid())
-  orderId String
-  transactionType TransactionType?
-  totalProductPrice Decimal @db.Decimal(10,4)
-  freightPrice Decimal @db.Decimal(10,4)
-  interestAmount Decimal @default(0) @db.Decimal(10,4) // Juros/multa cobrado ao fechar uma notinha atrasada (já somado no totalPrice)
-  totalPrice Decimal @db.Decimal(10,4)
-  isPaid Boolean @default(false)
-  paidDate DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model OrderTransaction {
+  id                String           @id @default(cuid())
+  orderId           String
+  transactionType   TransactionType?
+  totalProductPrice Decimal          @db.Decimal(10, 4)
+  freightPrice      Decimal          @db.Decimal(10, 4)
+  interestAmount    Decimal          @default(0) @db.Decimal(10, 4) // Juros/multa cobrado ao fechar uma notinha atrasada (já somado no totalPrice)
+  totalPrice        Decimal          @db.Decimal(10, 4)
 
-  order Order @relation(fields:[orderId], references: [id], onDelete: Cascade)
+  // Taxa da maquininha/operadora sobre ESTA venda. feePercent é congelada
+  // no momento em que o pagamento é registrado — mudar a taxa nas
+  // configurações não pode reescrever faturamento já fechado.
+  // Líquido recebido = totalPrice - feeAmount.
+  feePercent           Decimal @default(0) @db.Decimal(5, 2)
+  feeAmount            Decimal @default(0) @db.Decimal(10, 4)
+  // Pontos usados como desconto NESTA venda. O desconto sai do valor dos
+  // produtos (nunca do frete) e já está abatido em totalPrice, então o
+  // faturamento dos relatórios cai junto — que é o correto: desconto é
+  // receita que não entrou.
+  pointsRedeemed       Decimal @default(0) @db.Decimal(14, 4)
+  pointsDiscountAmount Decimal @default(0) @db.Decimal(10, 4)
+  // Pontos creditados ao COMPRADOR por esta venda (a rede acima dele
+  // aparece só no extrato). Preenchido quando o pagamento vira efetivo.
+  pointsAwarded        Decimal @default(0) @db.Decimal(14, 4)
+
+  isPaid    Boolean   @default(false)
+  paidDate  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
-model OrderAddress{
-  id String @id @default(cuid())
-  orderId String? @unique
+model OrderAddress {
+  id            String      @id @default(cuid())
+  orderId       String?     @unique
   recipientName String? // Nome de quem recebe — essencial quando o pedido é de um cliente anônimo (sem conta)
-  typeAddress TypeAddress
-  address String
-  number String
-  district String
-  complement String?
-  zipCode String?
+  typeAddress   TypeAddress
+  address       String
+  number        String
+  district      String
+  complement    String?
+  zipCode       String?
+
+  // Coordenadas resolvidas pelo geocoding (Nominatim/OpenStreetMap) pra
+  // desenhar o pedido no mapa de entregas. Ficam salvas como cache: cada
+  // endereço só é consultado uma vez. geocodedAt marca a tentativa, então
+  // endereço que não resolveu não fica sendo reconsultado em looping.
+  latitude   Float?
+  longitude  Float?
+  geocodedAt DateTime?
 
   order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
-model User{
-  id String @id 
-  fullName String
-  cellPhone String
-  dateOfBirth DateTime
-  gender GenderType
-  email String @unique
-  cpfCNPJ String @unique
-  accountType AccountType? @default(Client)
-  password String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  avatarUrl String?
-  verifiedEmail Boolean @default(false)
-  canPayOnTheBill Boolean @default(false)
-  clientOrders Order[] @relation("ClientOrders")
-  deliveryOrders Order[] @relation("DeliveryOrders")
-  address UserAddress[]
+model User {
+  id              String       @id
+  fullName        String
+  cellPhone       String
+  dateOfBirth     DateTime
+  gender          GenderType
+  email           String       @unique
+  cpfCNPJ         String       @unique
+  accountType     AccountType? @default(Client)
+  password        String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  avatarUrl       String?
+  verifiedEmail   Boolean      @default(false)
+  canPayOnTheBill Boolean      @default(false)
+  // Teto de notinha desta pessoa. Nulo = usa o padrão da loja
+  // (SiteSettings.defaultOnTheBillLimit).
+  onTheBillLimit  Decimal?     @db.Decimal(10, 2)
+  // ---------- Programa de pontos ----------
+  // Código do link de indicação (/register?ref=CODIGO). Gerado na primeira
+  // vez que a pessoa pede o link, não no cadastro: quem nunca divulgou
+  // nada não precisa carregar um código.
+  referralCode    String?      @unique
+  // Quem indicou. SetNull de propósito: apagar o padrinho não pode apagar
+  // o afiliado junto — e os pontos que ele já ganhou continuam válidos.
+  referredById    String?
+  referredAt      DateTime?
+  // Saldo desnormalizado. A verdade é a soma dos lotes vivos em
+  // PointsEntry; este campo existe pro header não somar o extrato inteiro
+  // a cada carregamento de página. Recalculado dentro da mesma transação
+  // que mexe nos lotes.
+  pointsBalance   Decimal      @default(0) @db.Decimal(14, 4)
+  // Última compra efetivamente PAGA. Base das duas regras de atividade:
+  // afiliado ativo (tier) e perda por inatividade.
+  lastPurchaseAt  DateTime?
+
+  referredBy      User?         @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals       User[]        @relation("UserReferrals")
+  pointsEntries   PointsEntry[] @relation("PointsOwner")
+  pointsGenerated PointsEntry[] @relation("PointsSource")
+
+  clientOrders   Order[]       @relation("ClientOrders")
+  deliveryOrders Order[]       @relation("DeliveryOrders")
+  address        UserAddress[]
 }
 
-model UserAddress{
-  id String @id @default(cuid())
-  userId String
+model UserAddress {
+  id          String      @id @default(cuid())
+  userId      String
   typeAddress TypeAddress
-  address String
-  number String
-  complement String?
-  district String
-  zipCode String?
-  isPrimary Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address     String
+  number      String
+  complement  String?
+  district    String
+  zipCode     String?
+  isPrimary   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum TypeAddress {
@@ -305,7 +385,7 @@ enum OrderSource {
   Instagram
   Call
   Local
-  Ifood 
+  Ifood
 }
 
 enum GenderType {
@@ -359,4 +439,169 @@ enum TransactionType {
   Pix
   DebitCard
   OnTheBill
+}
+
+enum FixedExpenseType {
+  Energy
+  Water
+  Rent
+}
+
+// Despesa fixa lançada num mês de COMPETÊNCIA — a energia de setembro é
+// despesa de setembro mesmo que a conta só seja paga em outubro. É isso
+// que faz a apuração mensal fechar certo.
+model FixedExpense {
+  id             String           @id @default(cuid())
+  type           FixedExpenseType
+  referenceYear  Int
+  referenceMonth Int // 1-12
+  amount         Decimal          @db.Decimal(10, 2)
+  note           String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Uma despesa de cada tipo por mês: lançar "energia" duas vezes no mesmo
+  // mês é quase sempre engano, e dobraria a dedução na DRE.
+  @@unique([type, referenceYear, referenceMonth])
+}
+
+enum StoreOverride {
+  ForceOpen
+  ForceClose
+}
+
+// Horário de funcionamento de um dia da semana — uma linha por dia.
+//
+// A janela pertence ao dia em que COMEÇA: sábado 20:00 → 04:00 é a noite
+// de sábado entrando na madrugada de domingo, e não duas janelas soltas.
+// Quando os dois horários são iguais, o dia é 24 horas.
+model StoreSchedule {
+  weekday     Int      @id // 0 = domingo ... 6 = sábado
+  isOpen      Boolean  @default(true)
+  openHour    Int      @default(8)
+  openMinute  Int      @default(0)
+  closeHour   Int      @default(22)
+  closeMinute Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================================
+// PROGRAMA DE PONTOS
+// ============================================================
+
+// Configuração única do programa (id fixo = 1). Tudo que o Admin pode
+// mexer na sub-aba Promoções > Pontos mora aqui — nada é constante no
+// código, porque a página pública explica essas regras ao cliente e as
+// duas coisas têm que sair da MESMA fonte, senão vira problema jurídico.
+model PointsSettings {
+  id      Int     @id @default(1)
+  enabled Boolean @default(true) // Desligado, ninguém ganha nem resgata
+
+  // ---------- Ganho por forma de pagamento (pontos por R$1) ----------
+  // Só incide sobre o valor dos PRODUTOS: frete e juros nunca pontuam.
+  moneyRate  Decimal @default(1) @db.Decimal(6, 4)
+  pixRate    Decimal @default(0.99) @db.Decimal(6, 4)
+  creditRate Decimal @default(0.95) @db.Decimal(6, 4)
+  debitRate  Decimal @default(0.95) @db.Decimal(6, 4)
+
+  // Notinha não pontua por si só — pontua quando é QUITADA, com a taxa da
+  // forma de pagamento usada no fechamento, e só se isso acontecer dentro
+  // do prazo. Fora do prazo, zero.
+  onTheBillGraceDays Int @default(5)
+
+  // ---------- Marketing multinível ----------
+  mlmEnabled       Boolean @default(true)
+  // Multiplicador por distância na árvore: 0 = o próprio comprador,
+  // 1 = quem o indicou, 2 = o de cima, 3 = o de cima. Abaixo disso, nada.
+  selfMultiplier   Decimal @default(1) @db.Decimal(6, 4)
+  level2Multiplier Decimal @default(0.5) @db.Decimal(6, 4)
+  level3Multiplier Decimal @default(0.25) @db.Decimal(6, 4)
+  level4Multiplier Decimal @default(0.1) @db.Decimal(6, 4)
+
+  // ---------- Tiers (aceleração por rede) ----------
+  tiersEnabled              Boolean @default(true)
+  // Afiliado "ativo" = indicado direto que comprou dentro desta janela.
+  activeAffiliateWindowDays Int     @default(90)
+
+  // ---------- Resgate ----------
+  pointsPerReal    Int     @default(100) // 100 pontos = R$ 1,00
+  minRedeemPoints  Int     @default(100)
+  maxRedeemPercent Decimal @default(50) @db.Decimal(5, 2) // Teto sobre o valor dos produtos
+
+  // ---------- Perdas passivas ----------
+  expirationDays Int @default(365) // Validade de cada lote de pontos
+  inactivityDays Int @default(90) // Sem comprar por esse prazo, zera o saldo
+
+  // ---------- Trava de segurança ----------
+  // Teto da distribuição de cashback, em % da receita de produtos. É o
+  // lucro líquido da empresa: passar disso quebra a operação no longo
+  // prazo. Não corta o ganho do cliente no meio da compra — trava o
+  // SALVAMENTO de uma configuração que projete acima do teto.
+  maxCashbackPercent Decimal @default(4) @db.Decimal(5, 2)
+
+  updatedAt DateTime @updatedAt
+}
+
+// Um degrau da escada de tiers. Fica em tabela (e não em enum) porque o
+// Admin cria, renomeia e reordena os degraus sem deploy.
+model PointsTier {
+  level               Int      @id // 0 = base, sem exigência de rede
+  name                String
+  multiplier          Decimal  @db.Decimal(6, 4)
+  minActiveAffiliates Int // Indicados DIRETOS e ativos exigidos
+  updatedAt           DateTime @updatedAt
+}
+
+enum PointsEntryType {
+  Earn // Ganho por compra efetivamente paga (própria ou da rede)
+  Redeem // Usado como desconto no checkout
+  Expire // Lote venceu a validade
+  InactivityReset // Zerado por inatividade
+  Reversal // Ganho desfeito (pedido cancelado / pagamento revertido)
+}
+
+// Extrato de pontos. Cada linha é uma movimentação, e um Earn é também um
+// LOTE: `remaining` é o que sobrou dele. Resgate, expiração e inatividade
+// consomem os lotes mais antigos primeiro (FIFO) — sem isso não dá pra
+// dizer quais pontos venceram, já que todos ficariam num saldo só.
+model PointsEntry {
+  id     String          @id @default(cuid())
+  userId String
+  type   PointsEntryType
+  amount Decimal         @db.Decimal(14, 4) // Positivo em Earn, negativo nas perdas
+
+  // Só em Earn: quanto deste lote ainda está vivo, e quando ele vence.
+  remaining Decimal   @default(0) @db.Decimal(14, 4)
+  expiresAt DateTime?
+
+  // Origem do ganho. `sourceLevel` é a distância + 1 (1 = a própria compra,
+  // 2 = indicado direto, 3, 4) — é o número que o extrato do cliente
+  // mostra, sem nunca revelar QUEM comprou.
+  sourceLevel        Int?
+  sourceUserId       String?
+  orderId            String?
+  orderTransactionId String?
+
+  // Memória de cálculo congelada: mudar a configuração amanhã não pode
+  // reescrever a explicação de um ganho de ontem.
+  basisAmount     Decimal? @db.Decimal(10, 4) // Valor de produtos que gerou
+  paymentRate     Decimal? @db.Decimal(6, 4)
+  levelMultiplier Decimal? @db.Decimal(6, 4)
+  tierMultiplier  Decimal? @db.Decimal(6, 4)
+  tierLevel       Int?
+
+  description String?
+  createdAt   DateTime @default(now())
+
+  user       User  @relation("PointsOwner", fields: [userId], references: [id], onDelete: Cascade)
+  sourceUser User? @relation("PointsSource", fields: [sourceUserId], references: [id], onDelete: SetNull)
+
+  // Blindagem contra pontuar duas vezes o mesmo recebimento: fechar a
+  // notinha de novo, ou reprocessar uma entrega, não duplica o ganho.
+  // Linhas sem transação (expiração, inatividade) ficam livres — no
+  // Postgres, NULL não colide com NULL.
+  @@unique([orderTransactionId, userId, type])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@index([expiresAt])
 }

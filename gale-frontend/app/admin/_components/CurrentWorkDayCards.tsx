@@ -90,10 +90,10 @@ const CurrentWorkDayCards = () => {
       className="w-full flex-shrink-0 sm:w-auto"
       style={{ height: CONTAINER_HEIGHT }}
     >
-      <div className="grid h-full grid-cols-2 grid-rows-2 gap-2 sm:w-[340px] sm:grid-cols-3">
+      <div className="grid h-full grid-cols-2 grid-rows-2 gap-1.5 sm:w-[300px] sm:grid-cols-3">
         {cards.map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="h-full py-0">
-            <CardContent className="flex h-full flex-col justify-center gap-0.5 px-2.5 py-1.5">
+            <CardContent className="flex h-full flex-col justify-center gap-0.5 px-2 py-1.5">
               <div className="flex items-center gap-1 text-[10px] text-gray-500">
                 <Icon className="h-3 w-3" />
                 {label}

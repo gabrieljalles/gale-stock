@@ -1,5 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class UpdateSettingsDto {
   @IsOptional()
@@ -8,13 +17,7 @@ export class UpdateSettingsDto {
 
   @IsOptional()
   @IsBoolean()
-  autoCloseEnabled?: boolean;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(23)
-  storeCloseHour?: number;
+  autoScheduleEnabled?: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -57,6 +60,20 @@ export class UpdateSettingsDto {
   deliveryEnabled?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  oneManArmyMode?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  state?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -76,4 +93,27 @@ export class UpdateSettingsDto {
   @Min(0)
   @Max(100)
   pixFeePercent?: number;
+
+  // Teto padrão de notinha, pra quem não tem limite próprio.
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  defaultOnTheBillLimit?: number;
+
+  // Simples Nacional. Só é usado no fechamento mensal (DRE), nunca na
+  // venda individual.
+  @IsOptional()
+  @IsBoolean()
+  simplesNacionalEnabled?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  taxPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  taxDeduction?: number;
 }

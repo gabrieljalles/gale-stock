@@ -1,0 +1,9 @@
+-- Migração sem efeito, recriada para destravar o Prisma.
+--
+-- O banco registra esta migração como aplicada, mas a pasta tinha ficado
+-- vazia no repositório — e o Prisma recusa qualquer comando (P3015)
+-- enquanto encontra um diretório de migração sem migration.sql.
+--
+-- O DDL de verdade está na migração gêmea 20250913161326, que roda logo
+-- em seguida. Por isso este arquivo é intencionalmente vazio: em banco
+-- novo, a gêmea cria tudo; em banco existente, aqui não há nada a fazer.

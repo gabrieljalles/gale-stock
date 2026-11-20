@@ -93,7 +93,10 @@ export class CatalogRepository {
             stockEntries: {
               select: {
                 quantityOnStock: true,
+                landedUnitCost: true,
+                createdAt: true,
               },
+              orderBy: { createdAt: 'desc' },
             },
           },
         },

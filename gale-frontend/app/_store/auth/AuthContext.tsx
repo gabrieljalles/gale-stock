@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   token: string | null;
-  signin: (email: string, password: string) => Promise<void>;
+  signin: (email: string, password: string) => Promise<User>;
   signout: () => void;
 }
 
@@ -22,7 +22,7 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   isLoading: true,
-  signin: async () => {},
+  signin: async () => ({}) as User,
   signout: () => {},
 });
 
@@ -58,12 +58,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLoading(false);
   }, []);
 
+  // Devolve o usuário logado porque quem chamou precisa decidir pra onde
+  // ir na hora — o estado `user` do contexto ainda não atualizou aqui.
   const signin = useCallback(async (email: string, password: string) => {
     const { access_token } = await apiLogin({ email, password });
     const u = decodeToken(access_token);
     setToken(access_token);
     setUser(u);
     localStorage.setItem("token", access_token);
+    return u;
   }, []);
 
   const signout = useCallback(() => {

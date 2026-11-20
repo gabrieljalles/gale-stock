@@ -1,0 +1,2 @@
+ALTER TABLE "SiteSettings" ADD COLUMN "city" TEXT NOT NULL DEFAULT 'Ituiutaba';
+ALTER TABLE "SiteSettings" ADD COLUMN "state" TEXT NOT NULL DEFAULT 'MG';

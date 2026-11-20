@@ -11,7 +11,9 @@ import StoreStatusDot from "../_components/StoreStatusDot";
 import TopProductsChart from "../_components/TopProductsChart";
 import ExpiredProductsWarning from "../_components/ExpiredProductsWarning";
 import LowStockWarning from "../_components/LowStockWarning";
+import PaymentMethodsChart from "../_components/PaymentMethodsChart";
 import OpenTabsList from "../_components/OpenTabsList";
+import DeliveryOrdersSection from "../_components/DeliveryOrdersSection";
 
 const ResumePage = () => {
   return (
@@ -33,19 +35,27 @@ const ResumePage = () => {
             </CatalogProvider>
           </StockTransactionProvider>
 
-          {/* Indicadores do dia de trabalho atual, mais vendidos e vencidos */}
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">
-              Dia de hoje
-            </h2>
-            <hr className="my-2" />
-            <div className="flex flex-wrap items-start gap-4">
-              <CurrentWorkDayCards />
-              <TopProductsChart />
-              <ExpiredProductsWarning />
-              <LowStockWarning />
-              <OpenTabsList />
+          {/* Só o traço separando os atalhos dos indicadores. */}
+          <hr className="my-2" />
+
+          <div className="flex items-stretch gap-2">
+            {/* Esquerda: indicadores em cima, pedidos (todas as etapas)
+                embaixo, ambos com a mesma largura. */}
+            <div className="min-w-0 flex-1 space-y-4">
+              <div className="flex flex-wrap items-start gap-3">
+                <CurrentWorkDayCards />
+                <TopProductsChart />
+                <PaymentMethodsChart scope="today" compact />
+                <ExpiredProductsWarning />
+                <LowStockWarning />
+              </div>
+
+              <DeliveryOrdersSection />
             </div>
+
+            {/* Direita: notinhas em aberto, esticando pra acompanhar a
+                altura total da coluna da esquerda. */}
+            <OpenTabsList />
           </div>
         </WorkDayProvider>
       </div>
